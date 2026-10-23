@@ -19,6 +19,10 @@ export default function Loader() {
   useEffect(() => {
     if (window.__zyronLoaded) return;
     window.__zyronLoaded = true;
+    // Windows/desktop: Escape closes whatever sheet is open
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && window.Z && window.Z.isSheetOpen && window.Z.isSheetOpen()) window.Z.closeSheet();
+    });
     (async () => { for (const src of SCRIPTS) await load(src); })().catch(console.error);
   }, []);
   return null;

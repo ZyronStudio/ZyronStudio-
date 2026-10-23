@@ -356,3 +356,22 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
   html.pw .inv::before{display:none}
   html.pw #printArea .inv-wm span{opacity:.18}
 }
+
+/* ---------- Windows / desktop: roomier column, centred sheets, keyboard + mouse polish ---------- */
+@media (min-width:900px){
+  #app,.pub{max-width:760px}
+  .nav,.totalbar{max-width:760px}
+  .sheet{max-width:560px;bottom:auto;top:50%;left:50%;right:auto;width:calc(100% - 48px);max-height:86dvh;border:1px solid var(--line);border-radius:22px;transform:translate(-50%,-46%) scale(.97);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s}
+  .sheet.on{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+  .toast{top:20px}
+  .sheet .grab{display:none}
+}
+@media (min-width:1280px){#app,.pub,.nav,.totalbar{max-width:880px}}
+@media (hover:hover) and (pointer:fine){
+  button,[data-act],a{cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .card[data-act]:hover,.row[data-act]:hover{border-color:var(--line-strong,rgba(255,255,255,.22))}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px;border:2px solid transparent;background-clip:content-box}
+}
+:focus-visible{outline:2px solid var(--gold,#d9b45b);outline-offset:2px;border-radius:8px}
