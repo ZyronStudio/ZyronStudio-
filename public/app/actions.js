@@ -19,7 +19,7 @@ function confirmSheet(title, text, label, fn, danger) {
 /* ================= render ================= */
 async function render() {
   var r = route(), el = $('#app'), key = location.hash;
-  document.title = 'Zyron — Invoicing that gets you paid';
+  document.title = 'Zyron Studio — Build your online store';
   if (r.n === 'i') { return renderPublic(r.a); }
   if (r.n === 'terms' || r.n === 'privacy') { el.innerHTML = r.n === 'terms' ? SCR.terms() : SCR.privacy(); window.scrollTo(0, 0); lastKey = key; return; }
   if (!S.user) {
@@ -32,8 +32,8 @@ async function render() {
   if (r.n !== 'new' && r.n !== 'edit') Z.setE(null);
   var html = '';
   switch (r.n) {
-    case '': case 'home': html = SCR.shome ? SCR.shome() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
-    case 'billing': html = SCR.home(); setTimeout(Z.tourMaybe, 0); break;
+    case '': case 'home': html = SCR.shome ? SCR.shome() : '<div class="screen">' + H.skeleton(4) + '</div>'; setTimeout(Z.tourMaybe, 0); break;
+    case 'billing': html = SCR.home(); break;
     case 'products': html = SCR.sproducts ? SCR.sproducts() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
     case 'orders': html = SCR.sorders ? SCR.sorders() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
     case 'invoices': html = SCR.invoices(); break;
@@ -550,7 +550,7 @@ function splash() {
   try { if (sessionStorage.getItem('zy_sp')) return; sessionStorage.setItem('zy_sp', '1'); } catch (e) { /* ignore */ }
   var Zp = 'M9 8H58V18L25 45H58V56H6V46L39 19H9Z', el = document.createElement('div'); el.className = 'splash'; el.setAttribute('role', 'presentation');
   el.innerHTML = '<div class="bloom"></div><svg class="mk" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="sl" x1="0.2" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#f9e3a4"/><stop offset="1" stop-color="#c99a3b"/></linearGradient><linearGradient id="sd" x1="0.2" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#c39434"/><stop offset="1" stop-color="#6a4811"/></linearGradient><clipPath id="su"><path d="M-2 36.3 66 20.3V-10H-2Z"/></clipPath><clipPath id="sn"><path d="M-2 39.7 66 23.7V80H-2Z"/></clipPath><clipPath id="sz"><path d="' + Zp + '"/></clipPath></defs>' +
-    '<g clip-path="url(#su)"><path class="pc" style="--dx:22px;--dy:-10px" fill="url(#sl)" d="' + Zp + '"/></g><g clip-path="url(#sn)"><path class="pc r" style="--dx:-22px;--dy:10px" fill="url(#sd)" d="' + Zp + '"/></g><g clip-path="url(#sz)"><line class="gleam" pathLength="1" x1="-2" y1="38" x2="66" y2="22"/></g></svg><div class="word">ZYRON</div><div class="skip">TAP TO SKIP</div>';
+    '<g clip-path="url(#su)"><path class="pc" style="--dx:22px;--dy:-10px" fill="url(#sl)" d="' + Zp + '"/></g><g clip-path="url(#sn)"><path class="pc r" style="--dx:-22px;--dy:10px" fill="url(#sd)" d="' + Zp + '"/></g><g clip-path="url(#sz)"><line class="gleam" pathLength="1" x1="-2" y1="38" x2="66" y2="22"/></g></svg><div class="word">ZYRON STUDIO</div><div class="tag">BUILD YOUR STORE. GET PAID.</div><div class="skip">TAP TO SKIP</div>';
   document.body.appendChild(el); var done = false;
   function out() { if (done) return; done = true; el.classList.add('out'); setTimeout(function () { el.remove(); }, 600); }
   el.addEventListener('click', out); setTimeout(out, 4000);

@@ -64,17 +64,17 @@ function spotsHTML() {
 }
 SCR.auth = function () {
   var G = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
-  return '<div class="auth"><div class="logo">' + zmk() + '<div class="word">ZYRON</div></div>' +
-    '<h1>Get paid faster. Look established.</h1>' +
-    '<p class="sub">Create invoices in seconds, send them on WhatsApp, and see the moment a client opens them.</p>' +
+  return '<div class="auth"><div class="logo">' + zmk() + '<div class="word">ZYRON STUDIO</div></div>' +
+    '<h1>Build your store.<br>Get paid.</h1>' +
+    '<p class="sub">Your own online store in minutes. Share the link, get orders on WhatsApp, and send invoices when you need them.</p>' +
     '<button class="btn btn-block gbtn" type="button" id="a_btn" data-act="google" style="background:#fff;color:#1f1f1f;border-color:#fff;gap:10px;font-weight:600">' + G + 'Continue with Google</button>' +
     '<div class="err" id="a_err" role="alert">' + esc(S.authNotice || '') + '</div>' +
     spotsHTML() +
     '<p class="hint" style="text-align:center;margin:0">Free for your first 2 months. No card needed.<br>By continuing you agree to the <a href="#/terms" class="inl">Terms</a> and <a href="#/privacy" class="inl">Privacy Policy</a>.</p>' +
     '<div class="perks">' +
-      '<div class="perk"><i>' + ic('chat', 'ic-sm') + '</i><span><b style="color:var(--text)">Send on WhatsApp</b> in one tap, with a secure link your client can open.</span></div>' +
-      '<div class="perk"><i>' + ic('eye', 'ic-sm') + '</i><span><b style="color:var(--text)">Know when it is opened.</b> No more guessing if they saw it.</span></div>' +
-      '<div class="perk"><i>' + ic('bell', 'ic-sm') + '</i><span><b style="color:var(--text)">Reminders and part payments</b> handled, with overdue tracking.</span></div></div>' +
+      '<div class="perk"><i>' + ic('box', 'ic-sm') + '</i><span><b style="color:var(--text)">A store that builds itself.</b> Pick your category, add products, publish.</span></div>' +
+      '<div class="perk"><i>' + ic('chat', 'ic-sm') + '</i><span><b style="color:var(--text)">Orders on WhatsApp.</b> Customers order from your link. No account needed.</span></div>' +
+      '<div class="perk"><i>' + ic('file', 'ic-sm') + '</i><span><b style="color:var(--text)">Invoices when you need them.</b> Send, track when opened, get paid.</span></div></div>' +
     '</div>';
 };
 

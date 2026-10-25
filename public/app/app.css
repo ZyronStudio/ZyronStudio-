@@ -375,3 +375,8 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
   ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px;border:2px solid transparent;background-clip:content-box}
 }
 :focus-visible{outline:2px solid var(--gold,#d9b45b);outline-offset:2px;border-radius:8px}
+
+.splash .tag{position:relative;font-size:11px;letter-spacing:.22em;color:#d9b45b;animation:word calc(.5s*var(--s)) ease calc(1s*var(--s)) backwards}
+.auth>*{animation:up .6s cubic-bezier(.2,.7,.2,1) backwards}.auth>*:nth-child(2){animation-delay:.08s}.auth>*:nth-child(3){animation-delay:.16s}.auth>*:nth-child(4){animation-delay:.24s}.auth>*:nth-child(n+5){animation-delay:.32s}
+@keyframes up{from{opacity:0;transform:translateY(14px)}}
+.auth .word{letter-spacing:.3em}

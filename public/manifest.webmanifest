@@ -1,7 +1,7 @@
 {
- "name": "Zyron",
+ "name": "Zyron Studio",
  "short_name": "Zyron",
- "description": "Invoicing that gets you paid.",
+ "description": "Build your online store, get orders on WhatsApp, send invoices.",
  "start_url": "/",
  "scope": "/",
  "display": "standalone",

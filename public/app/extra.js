@@ -100,11 +100,11 @@ document.addEventListener('input', function (e) {
 
 /* ---------------- Tour ---------------- */
 var TOUR = [
-  ['spark', 'Welcome to Zyron', 'Invoices that look premium, get sent in seconds, and tell you when a client opens them. Here is a quick tour.'],
-  ['user', 'Set up your business', 'Open More, then Business profile. Add your logo and bank details once, and they appear on every invoice.'],
-  ['plus', 'Create an invoice', 'Tap the gold + button. Pick a client, add what you did and the price, choose a theme, then preview it.'],
-  ['chat', 'Send it on WhatsApp', 'Tap Send and share the secure link. Your client opens a clean page with your bank details, and a Pay now button if you added a payment link.'],
-  ['eye', 'Watch it get paid', 'See when your client opens it, record payments (even part payments), and use reminders for overdue invoices. Find answers any time in More, Help & FAQ.']
+  ['spark', 'Welcome to Zyron Studio', 'Build your online store, get orders on WhatsApp, and send invoices when you need them. Here is a quick tour.'],
+  ['box', 'Add your products', 'Open Products and tap Add product. A photo, a name and a price is enough. Your store builds itself from your category.'],
+  ['share', 'Publish and share', 'On Home, tap Publish, then Share link. Put it on your WhatsApp status and Instagram bio.'],
+  ['chat', 'Orders on WhatsApp', 'Customers order from your link. Each order appears in Orders. Confirm it, then chat with the customer on WhatsApp.'],
+  ['file', 'Invoices when you need them', 'Open More, then Invoices. Send professional invoices, see when they are opened, and track who has paid.']
 ];
 var tourStep = 0;
 function tourSheet() {

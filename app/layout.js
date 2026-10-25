@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Zyron — Invoicing that gets you paid',
-  description: 'Create professional invoices, send them on WhatsApp, see when they are opened, and get paid faster. Built for freelancers and small businesses.',
+  title: 'Zyron Studio — Build your online store',
+  description: 'Build your online store in minutes. Share the link, get orders on WhatsApp, and send invoices when you need them. Made for Nigerian small businesses.',
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
 };
