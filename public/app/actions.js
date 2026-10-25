@@ -45,6 +45,7 @@ async function render() {
     case 'templates': html = SCR.templates(); break;
     case 'settings': html = SCR.settings(); break;
     case 'plan': html = SCR.plan(); break;
+    case 'store': html = SCR.store ? SCR.store() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
     case 'help': html = SCR.help(); break;
     default: html = SCR.home();
   }
@@ -590,7 +591,7 @@ async function start() {
       if (session && session.user) {
         if (!S.user || S.user.id !== session.user.id) { S.user = session.user; if (route().n === 'i') return; loadApp().then(function () { if (route().n === 'auth' || route().n === '') go('#/home'); }); }
       } else if (ev === 'SIGNED_OUT') {
-        S.user = null; S.profile = null; S.loaded = false; S.invoices = []; S.clients = []; S.payments = []; S.activity = []; S.templates = []; S.detail = {}; Z.setE(null); obShown = false; lastKey = null; PUB = null;
+        S.user = null; S.profile = null; S.loaded = false; S.invoices = []; S.clients = []; S.payments = []; S.activity = []; S.templates = []; S.detail = {}; if (Z.storeReset) Z.storeReset(); Z.setE(null); obShown = false; lastKey = null; PUB = null;
         if (Z.isSheetOpen()) Z.hideSheet(); if (route().n !== 'i') { location.replace('#/auth'); render(); }
       }
     }, 0);
