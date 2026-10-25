@@ -17,7 +17,7 @@ function navHTML(active) {
   function b(id, icon, label, to) { return '<button type="button" data-act="go" data-to="' + to + '"' + (active === id ? ' aria-current="page"' : '') + '>' + ic(icon) + label + '</button>'; }
   return '<nav class="nav" aria-label="Main">' + b('home', 'home', 'Home', '#/home') + b('invoices', 'file', 'Invoices', '#/invoices') +
     '<button type="button" class="fab" data-act="new-inv" aria-label="Create invoice"><span class="disc">' + ic('plus') + '</span>Create</button>' +
-    b('clients', 'users', 'Clients', '#/clients') + b('more', 'more', 'More', '#/more') + '</nav>';
+    b('store', 'box', 'Store', '#/store') + b('more', 'more', 'More', '#/more') + '</nav>';
 }
 function sparkSVG(vals) {
   var W = 320, H = 84, pad = 8, max = Math.max.apply(null, vals.concat([1])), step = W / (vals.length - 1);
@@ -242,7 +242,7 @@ SCR.clients = function () {
     var st = S.stats[c.id] || {}, out = Number(st.outstanding || 0), cc = clientCur(c.id) || cur;
     return '<button class="clientrow" data-act="client-open" data-id="' + esc(c.id) + '"><span class="av">' + esc(Z.initials(c.name)) + '</span><span class="m"><b>' + esc(c.name) + '</b><small>' + (st.invoice_count || 0) + ' invoice' + (st.invoice_count == 1 ? '' : 's') + '</small></span><span class="r">' + (out > 0 ? money(out, cc) + '<small>outstanding</small>' : '<small>settled</small>') + '</span></button>';
   }).join('') + '</div>' : empty(S.clients.length ? 'No clients match' : 'Add your first client', S.clients.length ? 'Try a different search.' : 'Clients keep their invoices, payments and history in one place.', S.clients.length ? '' : '<button class="btn btn-gold" data-act="client-new">Add client</button>');
-  return h + '</div>' + navHTML('clients');
+  return h + '</div>' + navHTML('more');
 };
 function clientCur(id) { var i = S.invoices.filter(function (x) { return x.client_id === id; })[0]; return i ? i.currency : null; }
 Z.clientCur = clientCur;
@@ -277,7 +277,7 @@ SCR.more = function () {
     '<div class="card" style="display:flex;gap:14px;align-items:center">' + (Z.safeLogo(p.logo_url) ? '<span class="logo-prev" style="border-style:solid"><img src="' + esc(Z.safeLogo(p.logo_url)) + '" alt=""></span>' : '<span class="av" style="width:52px;height:52px;font-size:18px">' + esc(Z.initials(p.business_name || p.full_name)) + '</span>') +
     '<div style="min-width:0"><b style="display:block;overflow-wrap:anywhere">' + esc(p.business_name || p.full_name || 'Your business') + '</b><span class="muted" style="font-size:13px;overflow-wrap:anywhere">' + esc(p.email || (S.user && S.user.email) || '') + '</span></div></div>' +
     '<div class="card menu" style="padding:0 14px">' +
-    m('share', 'My online store', 'Sell your products, orders come to WhatsApp', null, 'open-store') +
+    m('users', 'Clients', 'Everyone you invoice', '#/clients') +
     m('chart', 'Analytics', 'Revenue, trends, top clients', '#/analytics') +
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +
     m('user', 'Business profile', 'Logo, bank details, invoice defaults', '#/settings') +
