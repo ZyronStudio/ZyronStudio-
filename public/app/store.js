@@ -4,7 +4,8 @@
 var Z = window.Z, S = Z.S, esc = Z.esc, ic = Z.ic, SCR = Z.SCR, H = Z.helpers, toast = Z.toast, ACT = window.ZA.ACT;
 var SB_URL = 'https://tnjgkxdjejjvujtteyfx.supabase.co';
 var CATS = [['fashion', 'Fashion'], ['shoes_accessories', 'Shoes & accessories'], ['beauty_wigs', 'Beauty & wigs'], ['perfume_cosmetics', 'Perfume & cosmetics'], ['electronics', 'Electronics'], ['general', 'General']];
-var CURS = ['NGN', 'USD', 'GBP', 'EUR', 'CAD', 'AUD'];
+var CURS = [['NGN', '₦ Nigerian Naira (NGN)'], ['USD', '$ US Dollar (USD)'], ['GBP', '£ British Pound (GBP)'], ['EUR', '€ Euro (EUR)'], ['CAD', '$ Canadian Dollar (CAD)'], ['AUD', '$ Australian Dollar (AUD)']];
+var ACC = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a6ca', perfume_cosmetics: '#c7a8ff', electronics: '#4fe0cf', general: '#d4af37' };
 var ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], tab: 'products', err: '' };
 var NEXT = { awaiting_confirmation: ['confirmed', 'cancelled'], confirmed: ['preparing', 'cancelled'], preparing: ['ready'], ready: ['completed'] };
 function sb() { return Z.getSB(); }
@@ -14,6 +15,13 @@ function img(p) { return SB_URL + '/storage/v1/object/public/store-media/' + p; 
 function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
 function link(s) { return location.origin + '/store/' + s.slug; }
 function opts(list, cur) { return list.map(function (c) { var v = c[0] || c, l = c[1] || c; return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + l + '</option>'; }).join(''); }
+function logoEl(sz) { var s = ST.store; return s && s.logo_path ? '<img alt="" src="' + esc(img(s.logo_path)) + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;object-fit:cover;flex:none">' : '<span style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font-weight:800;flex:none">' + esc(((s && s.name) || 'S').charAt(0).toUpperCase()) + '</span>'; }
+async function putLogo(file, storeId, old) {
+  var blob = await toWebp(file, 512), path = storeId + '/logo-' + Date.now() + '.webp', c = sb();
+  var up = await c.storage.from('store-media').upload(path, blob, { contentType: 'image/webp' }); if (up.error) throw up.error;
+  var r = await c.from('stores').update({ logo_path: path }).eq('id', storeId); if (r.error) throw r.error;
+  if (old) await c.storage.from('store-media').remove([old]);
+}
 function rerender() { window.ZA.render(); }
 
 async function load(force) {
@@ -41,7 +49,8 @@ function setup() {
     '<div class="field"><label for="s_slug">Store link</label><input class="in" id="s_slug" maxlength="40" placeholder="maison-ade"><span class="hint" style="margin:0">' + esc(location.host) + '/store/…</span></div>' +
     '<div class="field"><label for="s_cat">What do you sell?</label><select class="in" id="s_cat">' + opts(CATS) + '</select></div>' +
     '<div class="field"><label for="s_wa">WhatsApp number (with country code) *</label><input class="in" id="s_wa" inputmode="tel" placeholder="2348012345678"></div>' +
-    '<div class="field"><label for="s_cur">Currency</label><select class="in" id="s_cur">' + opts(CURS, (S.profile && S.profile.currency) || 'NGN') + '</select></div>' +
+    '<div class="field"><label for="s_cur">Currency your prices are in</label><select class="in" id="s_cur">' + opts(CURS, (S.profile && S.profile.currency) || 'NGN') + '</select></div>' +
+    '<div class="field"><label for="s_logo">Store logo (optional)</label><input class="in" id="s_logo" type="file" accept="image/*"><span class="hint" style="margin:0">No logo? We show your store name in a clean style.</span></div>' +
     '<div class="err" id="s_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="st-create">Create store</button></div></div>' + H.navHTML('store');
 }
 
@@ -64,7 +73,7 @@ SCR.store = function () {
   var live = s.status === 'published', pend = ST.orders.filter(function (o) { return o.status === 'awaiting_confirmation'; }).length;
   var tr = ST.sub && ST.sub.status === 'trialing' && ST.sub.trial_ends_at ? ' · free until ' + new Date(ST.sub.trial_ends_at).toLocaleDateString() : '';
   var h = '<div class="screen">' + H.bar(s.name, { back: false, right: '<button class="icon-btn" data-act="st-settings" aria-label="Store settings">' + ic('user') + '</button>' }) +
-    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div><b>' + (live ? 'Your store is live' : s.status === 'suspended' ? 'Store suspended' : 'Draft, not live yet') + '</b><span class="hint" style="display:block;margin:2px 0 0">' + (live ? esc(link(s)) : 'Add products, then publish') + esc(tr) + '</span></div>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:12px;align-items:center">' + logoEl(52) + '<div style="min-width:0"><b>' + (live ? 'Your store is live' : s.status === 'suspended' ? 'Store suspended' : 'Draft, not live yet') + '</b><span class="hint" style="display:block;margin:2px 0 0">' + (live ? esc(link(s)) : 'Add products, then publish') + esc(tr) + '</span></div></div>' +
     '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' +
     (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share on WhatsApp</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div></div>' +
     '<div class="seg" style="margin:12px 0"><button data-act="st-tab" data-t="products" aria-pressed="' + (ST.tab === 'products') + '">Products</button><button data-act="st-tab" data-t="orders" aria-pressed="' + (ST.tab === 'orders') + '">Orders' + (pend ? ' (' + pend + ')' : '') + '</button></div>';
@@ -80,6 +89,7 @@ function prodForm(p) {
   return '<div style="display:flex;flex-direction:column;gap:12px"><div class="field"><label for="p_name">Name *</label><input class="in" id="p_name" maxlength="120" value="' + esc(p.name || '') + '"></div>' +
     '<div class="field"><label for="p_price">Price (' + esc(ST.store.currency) + ') *</label><input class="in" id="p_price" type="number" inputmode="decimal" min="0" step="0.01" value="' + (p.price_minor != null ? p.price_minor / 100 : '') + '"></div>' +
     '<div class="field"><label for="p_desc">Description</label><textarea class="in" id="p_desc" maxlength="1000">' + esc(p.description || '') + '</textarea></div>' +
+    '<div class="field"><label for="p_cat">Section (e.g. Dresses, Bags)</label><input class="in" id="p_cat" maxlength="40" list="p_cats" value="' + esc(p.category || '') + '"><datalist id="p_cats">' + sections().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
     '<div class="two"><div class="field"><label for="p_stock">Availability</label><select class="in" id="p_stock">' + opts([['in_stock', 'In stock'], ['out_of_stock', 'Out of stock'], ['made_to_order', 'Made to order']], p.stock_status || 'in_stock') + '</select></div>' +
     '<div class="field"><label for="p_status">Visibility</label><select class="in" id="p_status">' + opts([['published', 'Shown'], ['draft', 'Hidden']], p.status || 'published') + '</select></div></div>' +
     (imgs ? '<div style="display:flex;gap:8px;flex-wrap:wrap">' + imgs + '</div>' : '') +
@@ -94,6 +104,7 @@ function toWebp(file, max) {
   });
 }
 function perr(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+function sections() { var o = {}; ST.prods.forEach(function (p) { if (p.category) o[p.category] = 1; }); return Object.keys(o); }
 function byId(id) { return ST.prods.filter(function (p) { return p.id === id; })[0]; }
 
 ACT['open-store'] = function () { location.hash = '#/store'; };
@@ -108,7 +119,8 @@ ACT['st-create'] = async function (t) {
   t.disabled = true; perr('s_err', '');
   try {
     var c = sb(), ok = await c.rpc('store_slug_available', { p_slug: slug }); if (!ok.data) throw new Error('That store link is taken or not allowed. Try another.');
-    var r = await c.from('stores').insert({ owner_id: S.user.id, name: name, slug: slug, category: val('s_cat'), whatsapp: wa, currency: val('s_cur') }); if (r.error) throw r.error;
+    var r = await c.from('stores').insert({ owner_id: S.user.id, name: name, slug: slug, category: val('s_cat'), whatsapp: wa, currency: val('s_cur') }).select('id').single(); if (r.error) throw r.error;
+    var lf = document.getElementById('s_logo').files[0]; if (lf) { try { await putLogo(lf, r.data.id, null); } catch (e2) { toast('Store created, but the logo could not upload. Add it in settings.', true); } }
     ST.loaded = false; await load(true); toast('Store created. Add your first product.');
   } catch (e) { t.disabled = false; perr('s_err', Z.errMsg(e)); }
 };
@@ -117,7 +129,7 @@ ACT['st-save'] = async function (t) {
   if (!name) return perr('p_err', 'Enter a product name'); if (!(price >= 0)) return perr('p_err', 'Enter a valid price');
   t.disabled = true; t.textContent = 'Saving…'; perr('p_err', '');
   try {
-    var c = sb(), row = { name: name, description: val('p_desc'), price_minor: Math.round(price * 100), stock_status: val('p_stock'), status: val('p_status') }, pid = id;
+    var c = sb(), row = { name: name, description: val('p_desc'), category: val('p_cat') || null, price_minor: Math.round(price * 100), stock_status: val('p_stock'), status: val('p_status') }, pid = id;
     if (id) { var u = await c.from('store_products').update(row).eq('id', id); if (u.error) throw u.error; }
     else { row.store_id = ST.store.id; row.slug = slugify(name) + '-' + Math.random().toString(36).slice(2, 6); var n = await c.from('store_products').insert(row).select('id').single(); if (n.error) throw n.error; pid = n.data.id; }
     var files = Array.prototype.slice.call(document.getElementById('p_files').files, 0, 6), pos = id ? (byId(id).store_product_images || []).length : 0;
@@ -136,17 +148,19 @@ ACT['st-publish'] = async function () { try { var r = await sb().from('stores').
 ACT['st-settings'] = function () {
   var s = ST.store;
   Z.openSheet('Store settings', '<div style="display:flex;flex-direction:column;gap:12px">' +
+    '<div style="display:flex;gap:12px;align-items:center">' + logoEl(56) + '<div class="field" style="flex:1"><label for="e_logo">Store logo</label><input class="in" id="e_logo" type="file" accept="image/*"></div></div>' +
     '<div class="field"><label for="e_name">Store name</label><input class="in" id="e_name" maxlength="60" value="' + esc(s.name) + '"></div>' +
     '<div class="field"><label for="e_desc">About</label><textarea class="in" id="e_desc" maxlength="500">' + esc(s.description || '') + '</textarea></div>' +
     '<div class="field"><label for="e_wa">WhatsApp</label><input class="in" id="e_wa" inputmode="tel" value="' + esc(s.whatsapp || '') + '"></div>' +
     '<div class="field"><label for="e_ig">Instagram</label><input class="in" id="e_ig" maxlength="40" value="' + esc(s.instagram || '') + '"></div>' +
     '<div class="field"><label for="e_addr">Area / address</label><input class="in" id="e_addr" maxlength="200" value="' + esc(s.address || '') + '"></div>' +
-    '<div class="field"><label for="e_col">Accent colour</label><input class="in" id="e_col" type="color" value="' + esc(s.brand_color || '#d4af37') + '"></div>' +
+    '<div class="field"><label for="e_col">Accent colour</label><input class="in" id="e_col" type="color" value="' + esc(s.brand_color || ACC[s.category] || '#d4af37') + '"></div>' +
     '<div class="err" id="e_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="st-saveset">Save</button></div>');
 };
 ACT['st-saveset'] = async function (t) {
   var wa = val('e_wa').replace(/\D/g, ''); if (wa.length < 8) return perr('e_err', 'Enter a valid WhatsApp number'); t.disabled = true;
-  try { var r = await sb().from('stores').update({ name: val('e_name'), description: val('e_desc'), whatsapp: wa, instagram: val('e_ig'), address: val('e_addr'), brand_color: val('e_col') }).eq('id', ST.store.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Saved'); }
+  try { var lf = document.getElementById('e_logo').files[0]; if (lf) await putLogo(lf, ST.store.id, ST.store.logo_path);
+    var r = await sb().from('stores').update({ name: val('e_name'), description: val('e_desc'), whatsapp: wa, instagram: val('e_ig'), address: val('e_addr'), brand_color: val('e_col') }).eq('id', ST.store.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Saved'); }
   catch (e) { t.disabled = false; perr('e_err', Z.errMsg(e)); }
 };
 if (/^#\/store/.test(location.hash) && S.user) rerender();
