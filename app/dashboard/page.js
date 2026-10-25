@@ -18,7 +18,7 @@ export default function Dashboard() {
     setStore(s);
     if (!s) return;
     const [{ data: sub }, { data: p }, { data: o }] = await Promise.all([
-      sb.from('store_subscriptions').select('*').eq('store_id', s.id).maybeSingle(),
+      sb.from('store_subscriptions').select('*').eq('owner_id', user.id).maybeSingle(),
       sb.from('store_products').select('*, store_product_images(id,path,sort_order)').eq('store_id', s.id).neq('status', 'archived').order('created_at', { ascending: false }),
       sb.from('store_orders').select('*, store_order_items(*)').eq('store_id', s.id).order('created_at', { ascending: false }).limit(50)]);
     setSubs(sub); setProds(p || []); setOrders(o || []);
