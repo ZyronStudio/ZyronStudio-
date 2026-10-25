@@ -15,7 +15,7 @@ export function getSB() {
   });
   return p;
 }
-export const money = (minor, cur) => { try { return new Intl.NumberFormat('en', { style: 'currency', currency: cur || 'NGN', maximumFractionDigits: 0 }).format((minor || 0) / 100); } catch (e) { return (minor / 100) + ' ' + cur; } };
+export const money = (minor, cur) => { try { return new Intl.NumberFormat(cur === 'NGN' || !cur ? 'en-NG' : 'en', { style: 'currency', currency: cur || 'NGN', maximumFractionDigits: 0 }).format((minor || 0) / 100); } catch (e) { return (minor / 100) + ' ' + cur; } };
 export const imgUrl = (path) => SB_URL + '/storage/v1/object/public/store-media/' + path;
 export function toWebp(file, max = 1280) {
   return new Promise((res, rej) => {

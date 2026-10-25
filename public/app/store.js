@@ -17,7 +17,7 @@ function phoneField(id, label, full) {
 function getPhone(id) { var no = val(id + '_no').replace(/\D/g, '').replace(/^0+/, ''), full = val(id + '_cc') + no; return no.length >= 6 && full.length <= 15 ? full : ''; }
 function sb() { return Z.getSB(); }
 function val(id) { var e = document.getElementById(id); return e ? String(e.value).trim() : ''; }
-function m(minor, cur) { try { return new Intl.NumberFormat('en', { style: 'currency', currency: cur || 'NGN', maximumFractionDigits: 0 }).format((minor || 0) / 100); } catch (e) { return String(minor / 100) + ' ' + cur; } }
+function m(minor, cur) { try { return new Intl.NumberFormat(cur === 'NGN' || !cur ? 'en-NG' : 'en', { style: 'currency', currency: cur || 'NGN', maximumFractionDigits: 0 }).format((minor || 0) / 100); } catch (e) { return String(minor / 100) + ' ' + cur; } }
 function img(p) { return SB_URL + '/storage/v1/object/public/store-media/' + p; }
 function slugify(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
 function link(s) { return location.origin + '/store/' + s.slug; }
