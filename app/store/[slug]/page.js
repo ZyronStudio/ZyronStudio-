@@ -37,7 +37,7 @@ export default function Storefront({ params }) {
   async function order(e) {
     e.preventDefault(); if (draft) return setErr('This is a preview. Publish your store to take orders.');
     const f = new FormData(e.target); setBusy(true); setErr('');
-    const { data, error } = await sb.rpc('place_store_order', { p_slug: slug, p_items: lines.map(l => ({ product_id: l.p.id, quantity: l.q })), p_name: f.get('name'), p_phone: f.get('phone'), p_note: f.get('note') || null, p_address: f.get('address') || null });
+    const { data, error } = await sb.rpc('place_store_order', { p_slug: slug, p_items: lines.map(l => ({ product_id: l.p.id, quantity: l.q })), p_name: f.get('name'), p_phone: f.get('cc') + String(f.get('phone')).replace(/\D/g, '').replace(/^0+/, ''), p_note: f.get('note') || null, p_address: f.get('address') || null });
     setBusy(false); if (error) return setErr(error.message);
     setDone(data); setCart({}); setCo(false);
     const text = 'Hello ' + data.store_name + ', I just placed order ' + data.reference + ':\n' + data.items.map(i => i.quantity + '× ' + i.name).join('\n') + '\nTotal: ' + money(data.total_minor, data.currency) + '\nName: ' + f.get('name');
@@ -68,7 +68,7 @@ export default function Storefront({ params }) {
       <h2>Your order</h2>
       {lines.map(l => <div className="ln" key={l.p.id}><span>{l.p.name}</span><span className="qty"><button type="button" onClick={() => add(l.p.id, -1)}>−</button>{l.q}<button type="button" onClick={() => add(l.p.id, 1)}>+</button></span><span>{money(l.p.price_minor * l.q, store.currency)}</span></div>)}
       <p className="tot">Total <b>{money(total, store.currency)}</b></p>
-      <input name="name" placeholder="Your name" required maxLength={80} /><input name="phone" placeholder="Your WhatsApp number" inputMode="tel" required />
+      <input name="name" placeholder="Your name" required maxLength={80} /><div className="ph2"><select name="cc" defaultValue="234" aria-label="Country code"><option value="234">Nigeria +234</option><option value="233">Ghana +233</option><option value="254">Kenya +254</option><option value="27">South Africa +27</option><option value="1">USA/Canada +1</option><option value="44">UK +44</option><option value="971">UAE +971</option></select><input name="phone" placeholder="801 234 5678" inputMode="tel" required /></div>
       <input name="address" placeholder="Delivery address (optional)" maxLength={300} /><textarea name="note" placeholder="Note, size, colour… (optional)" maxLength={500} />
       <p className="mut">Sending this does not pay or confirm anything. {store.name} will confirm on WhatsApp, including delivery and payment.</p>
       {err && <p className="err">{err}</p>}

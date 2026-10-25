@@ -15,9 +15,7 @@ function empty(title, sub, btn) {
 }
 function navHTML(active) {
   function b(id, icon, label, to) { return '<button type="button" data-act="go" data-to="' + to + '"' + (active === id ? ' aria-current="page"' : '') + '>' + ic(icon) + label + '</button>'; }
-  return '<nav class="nav" aria-label="Main">' + b('home', 'home', 'Home', '#/home') + b('invoices', 'file', 'Invoices', '#/invoices') +
-    '<button type="button" class="fab" data-act="new-inv" aria-label="Create invoice"><span class="disc">' + ic('plus') + '</span>Create</button>' +
-    b('store', 'box', 'Store', '#/store') + b('more', 'more', 'More', '#/more') + '</nav>';
+  return '<nav class="nav" aria-label="Main">' + b('home', 'home', 'Home', '#/home') + b('products', 'box', 'Products', '#/products') + b('orders', 'file', 'Orders', '#/orders') + b('more', 'more', 'More', '#/more') + '</nav>';
 }
 function sparkSVG(vals) {
   var W = 320, H = 84, pad = 8, max = Math.max.apply(null, vals.concat([1])), step = W / (vals.length - 1);
@@ -127,7 +125,7 @@ SCR.home = function () {
     h += '<div class="section-title"><b>Recent invoices</b><button class="link-btn" data-act="go" data-to="#/invoices">See all</button></div><div class="card list" style="padding-block:4px 6px">' + S.invoices.slice(0, 5).map(invRow).join('') + '</div>';
     if (S.activity.length) h += '<div class="section-title"><b>Recent activity</b></div><div class="card" style="padding-block:6px">' + S.activity.slice(0, 5).map(actRow).join('') + '</div>';
   }
-  return h + '</div>' + navHTML('home');
+  return h + '</div>' + navHTML('more');
 };
 function hasUnseen() { try { var seen = localStorage.getItem('zy_seen_' + S.user.id) || ''; return S.activity.length && S.activity[0].created_at > seen; } catch (e) { return false; } }
 
@@ -146,13 +144,13 @@ SCR.invoices = function () {
   h += '<div class="chiprow">' + Object.keys(labels).map(function (k) { return '<button class="chip" data-act="invfilter" data-v="' + k + '" aria-pressed="' + (f === k) + '">' + labels[k] + ' ' + counts[k] + '</button>'; }).join('') + '</div>';
   h += rows.length ? '<div class="card list" id="invlist" style="padding-block:4px 6px">' + rows.map(invRow).join('') + '</div>' :
     empty(S.invoices.length ? 'No invoices match' : 'No invoices yet', S.invoices.length ? 'Try another filter or search.' : 'Create one and it will show up here.', S.invoices.length ? '' : '<button class="btn btn-gold" data-act="new-inv">New invoice</button>');
-  return h + '</div>' + navHTML('invoices');
+  return h + '</div>' + navHTML('more');
 };
 
 /* ================= INVOICE DETAIL ================= */
 SCR.detail = function (id) {
   var i = Z.invById(id);
-  if (!i) return '<div class="screen">' + bar('Invoice') + empty('Invoice not found', 'It may have been deleted.', '<button class="btn" data-act="go" data-to="#/invoices">Back to invoices</button>') + '</div>' + navHTML('invoices');
+  if (!i) return '<div class="screen">' + bar('Invoice') + empty('Invoice not found', 'It may have been deleted.', '<button class="btn" data-act="go" data-to="#/invoices">Back to invoices</button>') + '</div>' + navHTML('more');
   var det = S.detail[id], c = Z.clientById(i.client_id) || { name: 'Client' };
   var paid = Number(i.amount_paid), total = Number(i.total), pct = total > 0 ? Math.min(100, Math.round(paid / total * 100)) : 0;
   var st = i.status, open = Z.OPEN.indexOf(st) >= 0;
@@ -179,7 +177,7 @@ SCR.detail = function (id) {
   else h += '<div class="card" style="padding:16px"><div class="tl">' + (det.activity.length ? det.activity.map(function (a) { return '<div>' + esc(a.message) + '<small>' + Z.fmtDateTime(a.created_at) + '</small></div>'; }).join('') : '<div>Created<small>' + Z.fmtDateTime(i.created_at) + '</small></div>') + '</div></div>';
   h += '<div class="section-title"><b>Invoice</b><span class="eyebrow">' + esc(Z.themeOf(i.theme).name) + '</span></div>';
   h += det ? Z.ownerPaper(i, det.items, { preview: st === 'draft' }) : '<div class="skel" style="min-height:260px"></div>';
-  return h + '</div>' + navHTML('invoices');
+  return h + '</div>' + navHTML('more');
 };
 
 /* ================= EDITOR ================= */
@@ -277,7 +275,9 @@ SCR.more = function () {
     '<div class="card" style="display:flex;gap:14px;align-items:center">' + (Z.safeLogo(p.logo_url) ? '<span class="logo-prev" style="border-style:solid"><img src="' + esc(Z.safeLogo(p.logo_url)) + '" alt=""></span>' : '<span class="av" style="width:52px;height:52px;font-size:18px">' + esc(Z.initials(p.business_name || p.full_name)) + '</span>') +
     '<div style="min-width:0"><b style="display:block;overflow-wrap:anywhere">' + esc(p.business_name || p.full_name || 'Your business') + '</b><span class="muted" style="font-size:13px;overflow-wrap:anywhere">' + esc(p.email || (S.user && S.user.email) || '') + '</span></div></div>' +
     '<div class="card menu" style="padding:0 14px">' +
-    m('users', 'Clients', 'Everyone you invoice', '#/clients') +
+    m('file', 'Invoices', 'Create invoices and track payments', '#/billing') +
+    m('users', 'Customers', 'People you sell to and invoice', '#/clients') +
+    m('user', 'Store settings', 'Logo, WhatsApp, colour, link', null, 'st-settings') +
     m('chart', 'Analytics', 'Revenue, trends, top clients', '#/analytics') +
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +
     m('user', 'Business profile', 'Logo, bank details, invoice defaults', '#/settings') +
