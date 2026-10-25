@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { getSB, money, imgUrl } from '../../lib-sb';
+import { getSB, money, imgUrl, loadTheme } from '../../lib-sb';
 
 const PRESET = {
   fashion: { tag: 'New in', acc: '#e7c4b0', ratio: '4/5', cols: 2 }, shoes_accessories: { tag: 'Fresh pairs', acc: '#7fb2ff', ratio: '1/1', cols: 2 },
@@ -10,24 +10,25 @@ const PRESET = {
 
 export default function Storefront({ params }) {
   const { slug } = use(params);
-  const [q, setQ] = useState(''), [sec, setSec] = useState(''), [d, setD] = useState(undefined), [draft, setDraft] = useState(false), [cart, setCart] = useState({}), [open, setOpen] = useState(null), [co, setCo] = useState(false), [done, setDone] = useState(null), [err, setErr] = useState(''), [busy, setBusy] = useState(false), [sb, setSb] = useState(null);
+  const [tk, setTk] = useState(null), [q, setQ] = useState(''), [sec, setSec] = useState(''), [d, setD] = useState(undefined), [draft, setDraft] = useState(false), [cart, setCart] = useState({}), [open, setOpen] = useState(null), [co, setCo] = useState(false), [done, setDone] = useState(null), [err, setErr] = useState(''), [busy, setBusy] = useState(false), [sb, setSb] = useState(null);
 
+  useEffect(() => { if (!tk || !window.ZTheme) return; const v = window.ZTheme.cssVars(tk), r = document.documentElement; Object.entries(v).forEach(([k, x]) => r.style.setProperty(k, x)); document.body.style.background = tk.bg; document.body.style.color = tk.text; }, [tk]);
   useEffect(() => { (async () => {
-    const c = await getSB(); setSb(c);
+    const c = await getSB(); setSb(c); const ZT = await loadTheme();
     const { data } = await c.rpc('get_public_store', { p_slug: slug });
-    if (data) return setD(data);
+    if (data) { if (ZT) setTk(ZT.build(data.store.theme, data.store.category)); return setD(data); }
     const { data: s } = await c.auth.getSession();
     if (s.session) {
       const { data: st } = await c.from('stores').select('*').eq('slug', slug).eq('owner_id', s.session.user.id).maybeSingle();
       if (st) { const { data: p } = await c.from('store_products').select('*, store_product_images(path,sort_order)').eq('store_id', st.id).eq('status', 'published');
-        setDraft(true); return setD({ store: st, products: (p || []).map(x => ({ ...x, images: (x.store_product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(i => i.path) })) }); }
+        if (ZT) setTk(ZT.build(st.theme, st.category)); setDraft(true); return setD({ store: st, products: (p || []).map(x => ({ ...x, images: (x.store_product_images || []).sort((a, b) => a.sort_order - b.sort_order).map(i => i.path) })) }); }
     }
     setD(null);
   })().catch(() => setD(null)); }, [slug]);
 
   if (d === undefined) return <p className="mut c">Loading…</p>;
   if (!d) return <div className="c"><h1>Store not found</h1><p className="mut">This store may not be open yet.</p></div>;
-  const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, acc = store.brand_color || P.acc, cta = 'Add to order';
+  const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, cta = 'Add to order', vars = tk && window.ZTheme ? window.ZTheme.cssVars(tk) : { '--acc': P.acc };
   const secs = [...new Set(all.map(p => p.category).filter(Boolean))];
   const products = all.filter(p => (!sec || p.category === sec) && (!q || (p.name + ' ' + (p.description || '')).toLowerCase().includes(q.toLowerCase())));
   const lines = Object.entries(cart).map(([id, n]) => ({ p: all.find(x => x.id === id), q: n })).filter(l => l.p);
@@ -44,7 +45,7 @@ export default function Storefront({ params }) {
     window.open('https://wa.me/' + data.whatsapp + '?text=' + encodeURIComponent(text), '_blank');
   }
 
-  return (<div style={{ '--acc': acc, '--ratio': P.ratio }}>
+  return (<div className={tk && tk.button === 'outline' ? 'outline' : ''} style={{ ...vars, '--ratio': P.ratio }}>
     {draft && <div className="banner">Preview — only you can see this. Publish from your dashboard.</div>}
     <header className="hero">{store.logo_path ? <img className="logo" src={imgUrl(store.logo_path)} alt={store.name} /> : null}<h1>{store.name}</h1>{store.description && <p>{store.description}</p>}
       <div className="meta">{store.address && <span>{store.address}</span>}{store.instagram && <a href={'https://instagram.com/' + store.instagram.replace('@', '')} target="_blank" rel="noreferrer">@{store.instagram.replace('@', '')}</a>}</div></header>

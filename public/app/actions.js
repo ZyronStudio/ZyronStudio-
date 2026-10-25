@@ -35,6 +35,7 @@ async function render() {
     case '': case 'home': html = SCR.shome ? SCR.shome() : '<div class="screen">' + H.skeleton(4) + '</div>'; setTimeout(Z.tourMaybe, 0); break;
     case 'billing': html = SCR.home(); break;
     case 'products': html = SCR.sproducts ? SCR.sproducts() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
+    case 'theme': html = SCR.theme ? SCR.theme() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
     case 'orders': html = SCR.sorders ? SCR.sorders() : '<div class="screen">' + H.skeleton(4) + '</div>'; break;
     case 'invoices': html = SCR.invoices(); break;
     case 'inv': html = SCR.detail(r.a); loadDetail(r.a); break;

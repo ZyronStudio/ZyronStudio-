@@ -277,6 +277,7 @@ SCR.more = function () {
     '<div class="card menu" style="padding:0 14px">' +
     m('file', 'Invoices', 'Create invoices and track payments', '#/billing') +
     m('users', 'Customers', 'People you sell to and invoice', '#/clients') +
+    m('spark', 'Theme Studio', 'Colours, logo and store style', '#/theme') +
     m('user', 'Store settings', 'Logo, WhatsApp, colour, link', null, 'st-settings') +
     m('chart', 'Analytics', 'Revenue, trends, top clients', '#/analytics') +
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +

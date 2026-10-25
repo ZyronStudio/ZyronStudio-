@@ -90,6 +90,7 @@ SCR.shome = function () {
     '<div class="card" style="display:flex;flex-direction:column;gap:12px"><span class="lbl">Your store link</span><b style="overflow-wrap:anywhere;color:var(--gold)">' + esc(location.host + '/store/' + s.slug) + '</b>' +
     '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' + (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share link</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div>' +
     (!live && s.status !== 'suspended' && !pub ? '<span class="hint" style="margin:0">Add at least one product, then publish.</span>' : '') + (live ? '<button class="link-btn" style="align-self:flex-start" data-act="st-unpublish">Take store offline</button>' : '') + '</div>' +
+    '<button class="card" data-act="go" data-to="#/theme" style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-top:0"><span><b>Customise your store</b><span class="hint" style="display:block;margin:2px 0 0">Theme, colours, logo and style</span></span><span style="font-size:20px">›</span></button>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0">' + tile(pub, 'Products in store') + tile(pend.length, 'Orders to confirm') + '</div>';
   if (unpaid) h += '<button class="card" data-act="go" data-to="#/billing" style="width:100%;text-align:left;display:flex;justify-content:space-between"><span><b>' + unpaid + ' unpaid invoice' + (unpaid > 1 ? 's' : '') + '</b><span class="hint" style="display:block;margin:2px 0 0">Tap to follow up</span></span><span>›</span></button>';
   h += '<div class="lbl" style="margin:16px 0 8px">Recent orders</div>' + (ST.orders.length ? ST.orders.slice(0, 3).map(orderCard).join('') + '<button class="link-btn" data-act="go" data-to="#/orders">See all orders</button>' : '<p class="hint">No orders yet. Share your link and they will show up here.</p>');
@@ -184,15 +185,73 @@ ACT['st-settings'] = function () {
     phoneField('e_wa', 'WhatsApp number for orders', s.whatsapp) +
     '<div class="field"><label for="e_ig">Instagram</label><input class="in" id="e_ig" maxlength="40" value="' + esc(s.instagram || '') + '"></div>' +
     '<div class="field"><label for="e_addr">Area / address</label><input class="in" id="e_addr" maxlength="200" value="' + esc(s.address || '') + '"></div>' +
-    '<div class="field"><label for="e_col">Accent colour</label><input class="in" id="e_col" type="color" value="' + esc(s.brand_color || ACC[s.category] || '#d4af37') + '"></div>' +
     '<div class="err" id="e_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="st-saveset">Save</button></div>');
 };
 ACT['st-saveset'] = async function (t) {
   var wa = getPhone('e_wa'); if (!wa) return perr('e_err', 'Enter a valid WhatsApp number'); t.disabled = true;
   try { var lf = document.getElementById('e_logo').files[0]; if (lf) await putLogo(lf, ST.store.id, ST.store.logo_path);
-    var r = await sb().from('stores').update({ name: val('e_name'), description: val('e_desc'), whatsapp: wa, instagram: val('e_ig'), address: val('e_addr'), brand_color: val('e_col') }).eq('id', ST.store.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Saved'); }
+    var r = await sb().from('stores').update({ name: val('e_name'), description: val('e_desc'), whatsapp: wa, instagram: val('e_ig'), address: val('e_addr') }).eq('id', ST.store.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Saved'); }
   catch (e) { t.disabled = false; perr('e_err', Z.errMsg(e)); }
 };
 if (S.user && S.loaded) rerender();
-Z.storeReset = function () { ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
+/*TS*/
+/* ---------------- Theme Studio ---------------- */
+var TS = null;
+function tsInit() { var st = ST.store; TS = ZTheme.normalize(st.theme, st.category); TS.preset = (st.theme && st.theme.preset) || ''; }
+function styleStr(tk) { var v = ZTheme.cssVars(tk); return Object.keys(v).map(function (k) { return k + ':' + v[k]; }).join(';'); }
+function tsPreviewHTML(tk) {
+  var st = ST.store, ps = ST.prods.filter(function (p) { return p.status === 'published'; }).slice(0, 2), btn = tk.button === 'outline' ? 'background:transparent;color:var(--acc);border:2px solid var(--acc)' : 'background:var(--acc);color:var(--onacc);border:2px solid var(--acc)';
+  var logo = st.logo_path ? '<img alt="" src="' + esc(img(st.logo_path)) + '" style="width:40px;height:40px;object-fit:cover;border-radius:calc(var(--r) - 4px)">' : '<span style="width:40px;height:40px;border-radius:calc(var(--r) - 4px);background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-weight:800">' + esc(st.name.charAt(0).toUpperCase()) + '</span>';
+  function tile(p) { var im = p && (p.store_product_images || [])[0]; return '<div style="flex:1;min-width:0"><div style="aspect-ratio:4/5;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">' + (im ? '<img alt="" style="width:100%;height:100%;object-fit:cover" src="' + esc(img(im.path)) + '">' : '') + '</div><div style="font-size:12px;margin-top:5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p ? esc(p.name) : 'Your product') + '</div><div style="font-size:12px;color:var(--acc);font-weight:700">' + (p ? m(p.price_minor, st.currency) : '') + '</div></div>'; }
+  return '<div style="' + styleStr(tk) + ';background:var(--bg);color:var(--tx);font-family:var(--font);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:10px;align-items:center">' + logo + '<b style="font-size:17px;letter-spacing:-.02em">' + esc(st.name) + '</b></div>' +
+    '<div style="color:var(--mut);font-size:13px">' + esc(st.description || 'Your products, your brand.') + '</div><div style="display:flex;gap:10px">' + tile(ps[0]) + tile(ps[1]) + '</div>' +
+    '<div style="' + btn + ';border-radius:var(--rb);padding:11px;text-align:center;font-weight:700;font-size:14px">Add to order</div></div>';
+}
+function tsRefresh() {
+  var tk = ZTheme.build(TS, ST.store.category), pv = document.getElementById('ts_prev'); if (!pv) return;
+  pv.innerHTML = tsPreviewHTML(tk);
+  var w = document.getElementById('ts_warn'); if (w) w.innerHTML = tk.notes.length ? tk.notes.map(function (n) { return '<div class="hint" style="margin:0;color:var(--gold)">• ' + esc(n) + '</div>'; }).join('') : '<div class="hint" style="margin:0">✓ Text and buttons are easy to read (contrast ' + tk.contrast.text + ':1).</div>';
+  var hx = document.getElementById('ts_hex'), co = document.getElementById('ts_col'); if (hx && document.activeElement !== hx) hx.value = TS.primary; if (co) co.value = TS.primary;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ts]'), function (b) { var k = b.dataset.ts, v = b.dataset.v; b.setAttribute('aria-pressed', String(k === 'preset' ? TS.preset === v : TS[k] === v)); });
+}
+function seg(key, items) { return '<div class="seg" style="grid-template-columns:repeat(' + items.length + ',1fr)">' + items.map(function (i) { return '<button type="button" data-act="ts-set" data-ts="' + key + '" data-v="' + i[0] + '" aria-pressed="' + (TS[key] === i[0]) + '">' + i[1] + '</button>'; }).join('') + '</div>'; }
+SCR.theme = function () {
+  var g = gate(); if (g) return shell('Theme Studio', g, { back: true }) + H.navHTML('home');
+  if (!ST.store) return setup();
+  if (!TS) tsInit();
+  var tk = ZTheme.build(TS, ST.store.category), st = ST.store;
+  return '<div class="screen">' + H.bar('Theme Studio') + '<p class="hint" style="margin:0 0 12px">Pick a look. Your whole store updates to match. Nothing is live until you save.</p>' +
+    '<div id="ts_prev">' + tsPreviewHTML(tk) + '</div>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:12px;margin-top:12px"><span class="lbl">Quick look</span><div class="chiprow">' + ZTheme.PRESETS.map(function (p) { return '<button class="chip" data-act="ts-preset" data-ts="preset" data-v="' + p.id + '" aria-pressed="' + (TS.preset === p.id) + '"><span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + p.primary + ';margin-right:6px"></span>' + p.name + '</button>'; }).join('') + '</div>' +
+    '<div class="field"><label for="ts_hex">Main colour</label><div style="display:grid;grid-template-columns:56px 1fr;gap:8px"><input class="in" id="ts_col" type="color" value="' + TS.primary + '" style="padding:4px;height:46px"><input class="in" id="ts_hex" maxlength="7" value="' + TS.primary + '" placeholder="#10B981" autocapitalize="off" spellcheck="false"></div><span class="hint" style="margin:0">Pick one colour. The rest of the palette is built for you.</span></div>' +
+    '<div class="field"><label>Mode</label>' + seg('mode', [['dark', 'Dark'], ['light', 'Light']]) + '</div><div id="ts_warn"></div></div>' +
+    '<div class="card" style="display:flex;gap:12px;align-items:center">' + logoEl(52) + '<div style="flex:1;min-width:0" class="field"><label for="ts_logo">Store logo</label><input class="in" id="ts_logo" type="file" accept="image/*"></div>' + (st.logo_path ? '<button class="btn" data-act="ts-logo-rm" type="button">Remove</button>' : '') + '</div>' +
+    '<details class="card" style="padding:14px"><summary style="cursor:pointer;font-weight:600">Advanced: fonts, corners, buttons</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
+    '<div class="field"><label>Font</label>' + seg('font', [['modern', 'Modern'], ['classic', 'Classic'], ['friendly', 'Friendly']]) + '</div>' +
+    '<div class="field"><label>Corners</label>' + seg('radius', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]) + '</div>' +
+    '<div class="field"><label>Buttons</label>' + seg('button', [['solid', 'Solid'], ['outline', 'Outline']]) + '</div></div></details>' +
+    '<div class="err" id="ts_err" role="alert"></div><div class="btn-row" style="margin-top:6px"><button class="btn btn-grow" data-act="ts-reset">Reset</button><button class="btn btn-gold btn-grow" data-act="ts-save">Save theme</button></div>' +
+    '<p class="hint" style="text-align:center;margin-top:10px">Saved themes apply to your public store ' + (st.status === 'published' ? 'straight away.' : 'once you publish.') + '</p></div>' + H.navHTML('home');
+};
+ACT['ts-set'] = function (t) { TS[t.dataset.ts] = t.dataset.v; if (t.dataset.ts !== 'preset') TS.preset = TS.preset; tsRefresh(); };
+ACT['ts-preset'] = function (t) { var p = ZTheme.PRESETS.filter(function (x) { return x.id === t.dataset.v; })[0]; if (!p) return; TS = { preset: p.id, primary: p.primary, mode: p.mode, font: p.font, radius: p.radius, button: p.button }; rerender(); };
+ACT['ts-reset'] = function () { TS = null; tsInit(); TS = Object.assign(ZTheme.defaults(ST.store.category), { preset: '' }); rerender(); toast('Back to your category look. Tap Save to apply.'); };
+ACT['ts-save'] = async function (t) {
+  t.disabled = true; perr('ts_err', '');
+  try {
+    var c = sb(), lf = document.getElementById('ts_logo').files[0]; if (lf) await putLogo(lf, ST.store.id, ST.store.logo_path);
+    var th = { primary: TS.primary, mode: TS.mode, font: TS.font, radius: TS.radius, button: TS.button }; if (TS.preset) th.preset = TS.preset;
+    var r = await c.from('stores').update({ theme: th }).eq('id', ST.store.id); if (r.error) throw r.error;
+    TS = null; await load(true); toast('Theme saved');
+  } catch (e) { t.disabled = false; perr('ts_err', Z.errMsg(e)); }
+};
+ACT['ts-logo-rm'] = async function () { try { var old = ST.store.logo_path; var r = await sb().from('stores').update({ logo_path: null }).eq('id', ST.store.id); if (r.error) throw r.error; if (old) await sb().storage.from('store-media').remove([old]); await load(true); toast('Logo removed'); } catch (e) { toast(Z.errMsg(e), true); } };
+document.addEventListener('input', function (e) {
+  var i = e.target && e.target.id; if (!TS || !ST.store) return;
+  if (i === 'ts_col') { TS.primary = e.target.value; TS.preset = ''; tsRefresh(); }
+  if (i === 'ts_hex') { var v = e.target.value.trim(); if (v.charAt(0) !== '#') v = '#' + v; if (/^#[0-9a-fA-F]{6}$/.test(v)) { TS.primary = v.toLowerCase(); TS.preset = ''; tsRefresh(); } }
+  if (i === 'ts_logo' && e.target.files[0]) { var f = e.target.files[0], u = URL.createObjectURL(f); ST.store._previewLogo = u; }
+});
+
+Z.storeReset = function () { TS = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
 })();

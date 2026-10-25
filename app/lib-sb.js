@@ -30,3 +30,9 @@ export function toWebp(file, max = 1280) {
     im.src = u;
   });
 }
+
+export function loadTheme() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.ZTheme) return Promise.resolve(window.ZTheme);
+  return new Promise((res) => { const s = document.createElement('script'); s.src = '/app/theme.js'; s.onload = () => res(window.ZTheme); s.onerror = () => res(null); document.head.appendChild(s); });
+}
