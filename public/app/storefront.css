@@ -23,4 +23,4 @@ body{background:#05060a;color:#f3f1ea;font-family:Geist,system-ui,sans-serif;mar
 .btn.gold{background:var(--acc);color:#111;border-color:var(--acc)}.btn:disabled{opacity:.5}
 .err{color:#ff7b7b;margin:0}.ft{text-align:center;color:#555;margin-top:60px;font-size:13px}.ft a{color:#888}
 .logo{width:72px;height:72px;border-radius:18px;object-fit:cover;margin-bottom:12px}.srch{width:100%;margin:0 0 10px}.secs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px}.secs button{background:#12141b;color:#a9adb9;border:1px solid #222633;border-radius:99px;padding:8px 16px;font:inherit;cursor:pointer;white-space:nowrap}.secs .on{background:var(--acc);color:#111;border-color:var(--acc)}
-.ph2{display:grid;grid-template-columns:128px 1fr;gap:8px}.st select{background:#080a0f;border:1px solid #222633;color:#f3f1ea;border-radius:10px;padding:12px;font:inherit;font-size:16px}
+.ph2{display:grid;grid-template-columns:150px 1fr;gap:8px}.st select{background:#080a0f;border:1px solid #222633;color:#f3f1ea;border-radius:10px;padding:12px;font:inherit;font-size:16px}

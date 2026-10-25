@@ -12,14 +12,14 @@ var CC = [['234', 'Nigeria +234'], ['233', 'Ghana +233'], ['254', 'Kenya +254'],
 function phoneField(id, label, full) {
   full = String(full || '').replace(/\D/g, ''); var cc = '234', no = full;
   CC.slice().sort(function (a, b) { return b[0].length - a[0].length; }).some(function (c) { if (full.indexOf(c[0]) === 0 && full.length > c[0].length + 6) { cc = c[0]; no = full.slice(c[0].length); return true; } });
-  return '<div class="field"><label for="' + id + '_no">' + label + '</label><div style="display:grid;grid-template-columns:132px 1fr;gap:8px"><select class="in" id="' + id + '_cc" aria-label="Country code">' + CC.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === cc ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select><input class="in" id="' + id + '_no" type="tel" inputmode="tel" placeholder="801 234 5678" value="' + esc(no) + '"></div></div>';
+  return '<div class="field"><label for="' + id + '_no">' + label + '</label><div style="display:grid;grid-template-columns:152px 1fr;gap:8px"><select class="in" id="' + id + '_cc" aria-label="Country code">' + CC.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === cc ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select><input class="in" id="' + id + '_no" type="tel" inputmode="tel" placeholder="801 234 5678" value="' + esc(no) + '"></div></div>';
 }
 function getPhone(id) { var no = val(id + '_no').replace(/\D/g, '').replace(/^0+/, ''), full = val(id + '_cc') + no; return no.length >= 6 && full.length <= 15 ? full : ''; }
 function sb() { return Z.getSB(); }
 function val(id) { var e = document.getElementById(id); return e ? String(e.value).trim() : ''; }
 function m(minor, cur) { try { return new Intl.NumberFormat('en', { style: 'currency', currency: cur || 'NGN', maximumFractionDigits: 0 }).format((minor || 0) / 100); } catch (e) { return String(minor / 100) + ' ' + cur; } }
 function img(p) { return SB_URL + '/storage/v1/object/public/store-media/' + p; }
-function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
+function slugify(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
 function link(s) { return location.origin + '/store/' + s.slug; }
 function opts(list, cur) { return list.map(function (c) { var v = c[0] || c, l = c[1] || c; return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + l + '</option>'; }).join(''); }
 function logoEl(sz) { var s = ST.store; return s && s.logo_path ? '<img alt="" src="' + esc(img(s.logo_path)) + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;object-fit:cover;flex:none">' : '<span style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font-weight:800;flex:none">' + esc(((s && s.name) || 'S').charAt(0).toUpperCase()) + '</span>'; }
