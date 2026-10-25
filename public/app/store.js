@@ -50,7 +50,7 @@ async function load(force) {
 }
 
 function setup() {
-  return '<div class="screen">' + H.bar('Create your store') +
+  return '<div class="screen">' + H.bar('Create your store', { back: false }) +
     '<p class="hint" style="margin:0 0 14px">Your customers browse, pick items and send the order to your WhatsApp. Ready in a minute.</p><div class="card" style="display:flex;flex-direction:column;gap:12px">' +
     '<div class="field"><label for="s_name">Store name *</label><input class="in" id="s_name" maxlength="60" placeholder="Maison Adé"></div>' +
     '<div class="field"><label for="s_slug">Store link</label><input class="in" id="s_slug" maxlength="40" placeholder="maison-ade"><span class="hint" style="margin:0">' + esc(location.host) + '/store/…</span></div>' +
