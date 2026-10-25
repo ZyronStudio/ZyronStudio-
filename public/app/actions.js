@@ -322,6 +322,7 @@ SCR.settings = function () {
 
 /* ================= actions ================= */
 var ACT = {
+  'open-store': function () { location.href = '/dashboard'; },
   noop: function () { },
   go: function (t) { go(t.dataset.to); },
   back: function () { if (history.length > 1) history.back(); else go('#/home'); },

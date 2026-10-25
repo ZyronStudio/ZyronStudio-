@@ -74,7 +74,7 @@ export default function Dashboard() {
   const live = store.status === 'published', trialEnd = subs && subs.trial_ends_at ? new Date(subs.trial_ends_at) : null;
   return (<div>
     <header className="top"><div><h1>{store.name}</h1><p className="mut">{live ? 'Live' : store.status === 'suspended' ? 'Suspended' : 'Draft'}{trialEnd && subs.status === 'trialing' ? ' · free trial until ' + trialEnd.toLocaleDateString() : ''}</p></div>
-      <div className="row"><a className="btn" href={'/store/' + store.slug} target="_blank" rel="noreferrer">{live ? 'View store' : 'Preview'}</a>{!live && store.status !== 'suspended' && <button className="btn gold" onClick={publish}>Publish</button>}</div></header>
+      <div className="row"><a className="btn" href="/">← Invoicing</a><a className="btn" href={'/store/' + store.slug} target="_blank" rel="noreferrer">{live ? 'View store' : 'Preview'}</a>{!live && store.status !== 'suspended' && <button className="btn gold" onClick={publish}>Publish</button>}</div></header>
     {live && <p className="card mut">Share: <b>{location.origin}/store/{store.slug}</b> <button className="btn sm" onClick={() => { navigator.clipboard.writeText(location.origin + '/store/' + store.slug); say('Link copied'); }}>Copy</button></p>}
     <nav className="tabs">{['products', 'orders', 'settings'].map(t => <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>{t[0].toUpperCase() + t.slice(1)}{t === 'orders' && orders.filter(o => o.status === 'awaiting_confirmation').length ? ' •' : ''}</button>)}</nav>
     {msg && <p className="toast">{msg}</p>}
