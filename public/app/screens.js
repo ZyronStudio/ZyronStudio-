@@ -275,7 +275,7 @@ SCR.more = function () {
     '<div class="card" style="display:flex;gap:14px;align-items:center">' + (Z.safeLogo(p.logo_url) ? '<span class="logo-prev" style="border-style:solid"><img src="' + esc(Z.safeLogo(p.logo_url)) + '" alt=""></span>' : '<span class="av" style="width:52px;height:52px;font-size:18px">' + esc(Z.initials(p.business_name || p.full_name)) + '</span>') +
     '<div style="min-width:0"><b style="display:block;overflow-wrap:anywhere">' + esc(p.business_name || p.full_name || 'Your business') + '</b><span class="muted" style="font-size:13px;overflow-wrap:anywhere">' + esc(p.email || (S.user && S.user.email) || '') + '</span></div></div>' +
     '<div class="card menu" style="padding:0 14px">' +
-    m('file', 'Invoices', 'Create invoices and track payments', '#/billing') +
+    m('file', 'Invoices', 'Create invoices and track payments', '#/invoices') +
     m('users', 'Customers', 'People you sell to and invoice', '#/clients') +
     m('spark', 'Theme Studio', 'Colours, logo and store style', '#/theme') +
     m('user', 'Store settings', 'Logo, WhatsApp, colour, link', null, 'st-settings') +
