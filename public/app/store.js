@@ -380,7 +380,7 @@ SCR.theme = function () {
   if (!ST.store) return setup();
   if (!TS) tsInit();
   var tk = ZTheme.build(TS, ST.store.category), st = ST.store;
-  return '<div class="screen">' + H.bar('Theme Studio') + '<p class="hint" style="margin:0 0 12px">Pick a look. Your whole store updates to match. Nothing is live until you save.</p>' +
+  return '<div class="screen">' + H.bar('Theme Studio') + '<p class="hint" style="margin:0 0 12px">Pick a look. Your whole store updates to match. Nothing is live until you save.</p><button class="link-btn" data-act="st-settings" style="margin:-6px 0 8px">Edit store name, WhatsApp, about and address</button>' +
     '<div id="ts_prev">' + tsPreviewHTML(tk) + '</div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:12px;margin-top:12px"><span class="lbl">Quick look</span><div class="chiprow">' + ZTheme.PRESETS.map(function (p) { return '<button class="chip" data-act="ts-preset" data-ts="preset" data-v="' + p.id + '" aria-pressed="' + (TS.preset === p.id) + '"><span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + p.primary + ';margin-right:6px"></span>' + p.name + '</button>'; }).join('') + '</div>' +
     '<div class="field"><label for="ts_hex">Main colour</label><div style="display:grid;grid-template-columns:56px 1fr;gap:8px"><input class="in" id="ts_col" type="color" value="' + TS.primary + '" style="padding:4px;height:46px"><input class="in" id="ts_hex" maxlength="7" value="' + TS.primary + '" placeholder="#10B981" autocapitalize="off" spellcheck="false"></div><span class="hint" style="margin:0">Pick one colour. The rest of the palette is built for you.</span></div>' +

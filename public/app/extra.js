@@ -215,7 +215,7 @@ var FAQ = [
  ],
  [
   "How do I add my bank details to invoices?",
-  "Go to More, then Business profile, and fill in “Where clients pay you”. The bank name, account number and account name appear on your invoices with a Copy button for your client."
+  "Go to More, then Invoice & account settings, and fill in “Where clients pay you”. The bank name, account number and account name appear on your invoices with a Copy button for your client."
  ],
  [
   "How do I know when a client has opened an invoice?",
@@ -231,7 +231,7 @@ var FAQ = [
  ],
  [
   "How do the Pay now button and QR code work?",
-  "In Business profile you can paste a payment link from your own Paystack, Flutterwave or bank payment page. Your clients then see a Pay now button and a QR code on the invoice. Zyron Studio never handles the money."
+  "In Invoice & account settings you can paste a payment link from your own Paystack, Flutterwave or bank payment page. Your clients then see a Pay now button and a QR code on the invoice. Zyron Studio never handles the money."
  ],
  [
   "What is included in the free trial?",
@@ -259,11 +259,11 @@ var FAQ = [
  ],
  [
   "How do I delete my account or my data?",
-  "Go to More, then Business profile, and tap Delete my account. You can download your invoices first. Deleting is permanent and also removes your store, products and orders. Accounts with no activity for 120 days (180 if notifications are off) are deleted automatically, and we send a warning notification first if notifications are on."
+  "Go to More, then Invoice & account settings, and tap Delete my account. You can download your invoices first. Deleting is permanent and also removes your store, products and orders. Accounts with no activity for 120 days (180 if notifications are off) are deleted automatically, and we send a warning notification first if notifications are on."
  ],
  [
   "How do I get notifications?",
-  "Go to More, then Business profile, and tap Turn notifications on. Allow notifications when your phone asks. You will be told when a client opens or pays an invoice, even when Zyron Studio is closed."
+  "Go to More, then Invoice & account settings, and tap Turn notifications on. Allow notifications when your phone asks. You will be told when a client opens or pays an invoice, even when Zyron Studio is closed."
  ]
 ];
 SCR.help = function () {

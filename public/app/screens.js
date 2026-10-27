@@ -277,18 +277,17 @@ SCR.more = function () {
     '<div class="card menu" style="padding:0 14px">' +
     m('file', 'Invoices', 'Create invoices and track payments', '#/invoices') +
     m('users', 'Customers', 'People you sell to and invoice', '#/clients') +
-    m('spark', 'Theme Studio', 'Colours, logo and store style', '#/theme') +
-    m('user', 'Store settings', 'Logo, WhatsApp, colour, link', null, 'st-settings') +
+    m('spark', 'Theme Studio', 'Your store look: colours, logo, style', '#/theme') +
     m('chart', 'Analytics', 'Revenue, trends, top clients', '#/analytics') +
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +
-    m('user', 'Business profile', 'Logo, bank details, invoice defaults', '#/settings') +
+    m('user', 'Invoice & account settings', 'Bank details, invoice defaults, notifications', '#/settings') +
     m('card', 'Plan & billing', 'Trial status and pricing', '#/plan') +
     m('help', 'Help & FAQ', 'Tutorial, answers and support', '#/help') +
-    m('share', 'Invite a friend', 'Share Zyron on WhatsApp', null, 'invite') +
-    m('phone', 'Install the app', 'Add Zyron to your home screen', null, 'install') +
+    m('share', 'Invite a friend', 'Share Zyron Studio on WhatsApp', null, 'invite') +
+    m('phone', 'Install the app', 'Add Zyron Studio to your home screen', null, 'install') +
     m('out', 'Sign out', 'See you soon', null, 'signout') + '</div>' +
     '<p class="hint" style="text-align:center"><a class="inl" href="#/terms">Terms</a> · <a class="inl" href="#/privacy">Privacy</a></p>' +
-    '<p class="hint" style="text-align:center">Zyron · Built in Lagos by Zyron Studio</p></div>' + navHTML('more');
+    '<p class="hint" style="text-align:center">Zyron Studio · Built in Lagos</p></div>' + navHTML('more');
 };
 SCR.analytics = function () {
   var curs = Z.currenciesUsed(), cur = S.dcur, m = Z.metrics(cur), max = Math.max.apply(null, m.months.map(function (x) { return x.v; }).concat([1]));
@@ -325,8 +324,8 @@ Z.tplSheetHTML = tplSheetHTML;
 SCR.settings = function () {
   var p = S.profile, logo = Z.safeLogo(p.logo_url);
   function f(id, label, v, o) { o = o || {}; return '<div class="field"><label for="' + id + '">' + label + '</label><input class="in" id="' + id + '" value="' + esc(v || '') + '"' + (o.type ? ' type="' + o.type + '"' : '') + (o.mode ? ' inputmode="' + o.mode + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + (o.ph ? ' placeholder="' + o.ph + '"' : '') + ' autocomplete="off"></div>'; }
-  return '<div class="screen nonav">' + bar('Business profile') + '<form id="setform" novalidate style="display:flex;flex-direction:column;gap:14px">' +
-    '<div class="card" style="display:flex;flex-direction:column;gap:14px"><div class="eyebrow">Business</div><div class="logo-up"><div class="logo-prev" id="logoprev">' + (logo ? '<img src="' + esc(logo) + '" alt="Logo">' : ic('user', 'ic-lg')) + '</div><div><button class="btn" type="button" data-act="logo-pick">' + (logo ? 'Change logo' : 'Upload logo') + '</button><div class="hint" style="margin-top:6px">PNG or JPG. Shown on every invoice.</div></div></div><input type="file" id="logofile" accept="image/png,image/jpeg,image/webp" hidden>' +
+  return '<div class="screen nonav">' + bar('Invoice & account settings') + '<form id="setform" novalidate style="display:flex;flex-direction:column;gap:14px">' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:14px"><div class="eyebrow">Business details (shown on your invoices)</div><div class="logo-up"><div class="logo-prev" id="logoprev">' + (logo ? '<img src="' + esc(logo) + '" alt="Logo">' : ic('user', 'ic-lg')) + '</div><div><button class="btn" type="button" data-act="logo-pick">' + (logo ? 'Change logo' : 'Upload logo') + '</button><div class="hint" style="margin-top:6px">PNG or JPG. Shown on every invoice.</div></div></div><input type="file" id="logofile" accept="image/png,image/jpeg,image/webp" hidden>' +
     f('s_biz', 'Business name', p.business_name, { max: 120, ph: 'e.g. Nova Creative Studio' }) + f('s_name', 'Your name', p.full_name, { max: 80 }) +
     '<div class="two">' + f('s_phone', 'Phone / WhatsApp', p.phone, { type: 'tel', mode: 'tel' }) + f('s_email', 'Business email', p.email, { type: 'email', mode: 'email' }) + '</div>' + f('s_addr', 'Address', p.address, { max: 200, ph: 'City, State' }) + f('s_web', 'Website', p.website, { max: 200, ph: 'optional' }) + '</div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:14px"><div class="eyebrow">Where clients pay you</div>' + f('s_bank', 'Bank name', p.bank_name, { max: 80, ph: 'e.g. GTBank' }) + '<div class="two">' + f('s_acct', 'Account number or IBAN', p.account_number, { max: 34, ph: 'e.g. 0123456789' }) + f('s_aname', 'Account name', p.account_name, { max: 120 }) + '</div>' + f('s_paylink', 'Payment link (optional)', p.pay_link, { type: 'url', mode: 'url', max: 500, ph: 'https://paystack.com/pay/yourname' }) + '<p class="hint" style="margin:0">Clients get a Pay now button and a QR code. Use a link from your own Paystack, Flutterwave or bank payment page. Zyron never handles the money.</p>' + f('s_intl', 'International transfers (optional)', p.intl_bank, { max: 300, ph: 'SWIFT/BIC, routing number, bank address' }) + '<p class="hint" style="margin:0">For clients abroad: add SWIFT/BIC, routing number or IBAN. Shown on invoices under International.</p><p class="hint" style="margin:0">Shown on your invoices so clients can transfer straight to you. Use an account you control.</p></div>' +
