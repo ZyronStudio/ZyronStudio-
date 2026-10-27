@@ -108,8 +108,8 @@ async function buildPdf(d, opt) {
   }
   function watermark() {
     [0.2, 0.5, 0.8].forEach(function (f) {
-      var s = 'ZYRON TRIAL', w = tw(s, 54, true), cx = PW / 2, cy = PH * (1 - f), co = 0.866, si = 0.5;
-      c.push('q /GS1 gs ' + col(white ? '#000000' : th.a) + ' rg BT /F2 54 Tf ' + co + ' ' + si + ' ' + (-si) + ' ' + co + ' ' + n(cx - (w / 2) * co) + ' ' + n(cy - (w / 2) * si) + ' Tm (' + s + ') Tj ET Q');
+      var s = 'ZYRON STUDIO', w = tw(s, 44, true), cx = PW / 2, cy = PH * (1 - f), co = 0.866, si = 0.5;
+      c.push('q /GS1 gs ' + col(white ? '#000000' : th.a) + ' rg BT /F2 44 Tf ' + co + ' ' + si + ' ' + (-si) + ' ' + co + ' ' + n(cx - (w / 2) * co) + ' ' + n(cy - (w / 2) * si) + ' Tm (' + s + ') Tj ET Q');
     });
   }
   function newPage() { c = []; pages.push(c); fill(0, 0, PW, PH, P.bg); if (trial) watermark(); y = M; }
