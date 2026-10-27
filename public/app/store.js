@@ -177,18 +177,36 @@ function gate() {
   return null;
 }
 function tile(n, label) { return '<div class="card" style="padding:14px;margin:0"><b style="font-size:26px;letter-spacing:-.02em">' + n + '</b><span class="hint" style="display:block;margin:2px 0 0">' + label + '</span></div>'; }
+function dash() {
+  var cur = ST.store.currency, now = new Date(), days = [], i;
+  var good = ST.orders.filter(function (o) { return ['confirmed', 'preparing', 'ready', 'completed'].indexOf(o.status) > -1; });
+  for (i = 6; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); days.push({ d: d, v: 0 }); }
+  good.forEach(function (o) { var t = new Date(o.created_at), k = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5); if (k >= 0 && k < 7) days[6 - k].v += o.total_minor; });
+  var sales = good.reduce(function (a, o) { return a + o.total_minor; }, 0), cust = {}, cnt = ST.orders.filter(function (o) { return o.status !== 'cancelled'; }).length;
+  ST.orders.forEach(function (o) { cust[o.customer_phone] = 1; });
+  var mx = Math.max.apply(null, days.map(function (x) { return x.v; }).concat([1])), W = 300, H2 = 90, bw = 28, pts = days.map(function (x, k) { return [20 + k * 43.3, 80 - (x.v / mx) * 62]; });
+  var line = pts.map(function (q, k) { return (k ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' '), area = line + ' L' + pts[6][0].toFixed(1) + ' 84 L' + pts[0][0].toFixed(1) + ' 84 Z';
+  var lbl = days.map(function (x, k) { return '<text x="' + pts[k][0].toFixed(1) + '" y="98" text-anchor="middle" font-size="9" fill="var(--muted)">' + ['S', 'M', 'T', 'W', 'T', 'F', 'S'][x.d.getDay()] + '</text>'; }).join('');
+  var kpi = function (n, l, sub) { return '<div class="kpi"><span class="hint" style="margin:0">' + l + '</span><b>' + n + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; };
+  var qa = function (ic, t, act, to) { return '<button class="qa" data-act="' + act + '"' + (to ? ' data-to="' + to + '"' : '') + '><span>' + ic + '</span>' + t + '</button>'; };
+  return '<div class="welcome"><span class="hint" style="margin:0">Welcome back</span><b>' + esc(ST.store.name) + '</b></div>' +
+    '<div class="kpis">' + kpi(m(sales, cur), 'Confirmed sales', 'orders you confirmed') + kpi(cnt, 'Orders', 'excluding cancelled') + kpi(Object.keys(cust).length, 'Customers', 'unique phone numbers') + kpi(ST.prods.filter(function (p) { return p.status === 'published'; }).length, 'Products live', '') + '</div>' +
+    '<div class="card" style="padding:14px 14px 8px"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>Sales, last 7 days</b><span class="hint" style="margin:0">' + (sales ? 'from your orders' : 'no sales yet') + '</span></div>' +
+    '<svg viewBox="0 0 ' + W + ' 104" width="100%" role="img" aria-label="Confirmed sales over the last 7 days"><defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gold)" stop-opacity=".35"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs><path d="' + area + '" fill="url(#dg)"/><path d="' + line + '" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>' + pts.map(function (q) { return '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="2.6" fill="var(--gold)"/>'; }).join('') + lbl + '</svg></div>' +
+    '<div class="lbl" style="margin:4px 0 -2px">Quick actions</div><div class="qas">' + qa('＋', 'Add product', 'st-new') + qa('◐', 'Customise', 'go', '#/theme') + qa('▤', 'New invoice', 'go', '#/new') + qa('⧉', 'Copy link', 'st-copy') + '</div>';
+}
 SCR.shome = function () {
   var g = gate(); if (g) return shell('Home', g) + H.navHTML('home');
   var s = ST.store; if (!s) return setup();
   var live = s.status === 'published', pend = ST.orders.filter(function (o) { return o.status === 'awaiting_confirmation'; }), pub = ST.prods.filter(function (p) { return p.status === 'published'; }).length;
   var tr = ST.sub && ST.sub.status === 'trialing' && ST.sub.trial_ends_at ? 'Free trial until ' + new Date(ST.sub.trial_ends_at).toLocaleDateString() : '';
   var unpaid = (S.invoices || []).filter(function (i) { return ['sent', 'viewed', 'partial', 'overdue'].indexOf(i.status) > -1; }).length;
-  var h = vidCard() + '<div class="card" style="display:flex;gap:14px;align-items:center">' + logoEl(56) + '<div style="min-width:0"><b style="font-size:19px;display:block;overflow-wrap:anywhere">' + esc(s.name) + '</b><span class="pill ' + (live ? 'paid' : '') + '">' + (live ? 'Live' : s.status === 'suspended' ? 'Suspended' : 'Not published') + '</span></div></div>' +
+  var h = vidCard() + dash() + '<div class="card" style="display:flex;gap:14px;align-items:center">' + logoEl(56) + '<div style="min-width:0"><b style="font-size:19px;display:block;overflow-wrap:anywhere">' + esc(s.name) + '</b><span class="pill ' + (live ? 'paid' : '') + '">' + (live ? 'Live' : s.status === 'suspended' ? 'Suspended' : 'Not published') + '</span></div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:12px"><span class="lbl">Your store link</span><b style="overflow-wrap:anywhere;color:var(--gold)">' + esc(location.host + '/store/' + s.slug) + '</b>' +
     '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' + '<button class="btn btn-grow" data-act="st-copy">Copy link</button>' + (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share link</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div>' +
     (!live && s.status !== 'suspended' && !pub ? '<span class="hint" style="margin:0">Add at least one product, then publish.</span>' : '') + (live ? '<button class="link-btn" style="align-self:flex-start" data-act="st-unpublish">Take store offline</button>' : '') + '</div>' +
     '<button class="card" data-act="go" data-to="#/theme" style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-top:0"><span><b>Customise your store</b><span class="hint" style="display:block;margin:2px 0 0">Theme, colours, logo and style</span></span><span style="font-size:20px">›</span></button>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0">' + tile(pub, 'Products in store') + tile(pend.length, 'Orders to confirm') + '</div>';
+    (pend.length ? '<button class="card" data-act="go" data-to="#/orders" style="width:100%;text-align:left;border-color:var(--gold);margin:12px 0 0"><b>' + pend.length + ' order' + (pend.length > 1 ? 's' : '') + ' to confirm</b><span class="hint" style="display:block;margin:2px 0 0">Tap to review</span></button>' : '');
   if (unpaid) h += '<button class="card" data-act="go" data-to="#/billing" style="width:100%;text-align:left;display:flex;justify-content:space-between"><span><b>' + unpaid + ' unpaid invoice' + (unpaid > 1 ? 's' : '') + '</b><span class="hint" style="display:block;margin:2px 0 0">Tap to follow up</span></span><span>›</span></button>';
   h += '<div class="lbl" style="margin:16px 0 8px">Recent orders</div>' + (ST.orders.length ? ST.orders.slice(0, 3).map(orderCard).join('') + '<button class="link-btn" data-act="go" data-to="#/orders">See all orders</button>' : '<p class="hint">No orders yet. Share your link and they will show up here.</p>');
   h += '<p class="hint" style="text-align:center;margin-top:18px">Need an invoice for a customer? <button class="link-btn" data-act="go" data-to="#/new">Create one</button></p>';
@@ -436,8 +454,6 @@ document.addEventListener('input', function (e) {
 });
 
 Z.storeReset = function () { TS = null; SU = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
-})();
-
 /* ---- order alerts: only for real new orders ---- */
 var NT = { seen: null, on: false };
 function canNotify() { return 'Notification' in window; }
@@ -467,3 +483,4 @@ async function pollOrders() {
 }
 setInterval(pollOrders, 45000);
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') pollOrders(); });
+})();
