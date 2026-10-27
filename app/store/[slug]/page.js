@@ -36,13 +36,17 @@ export default function Storefront({ params }) {
   const add = (id, n = 1) => setCart(c => { const q = Math.max(0, Math.min(50, (c[id] || 0) + n)), x = { ...c }; if (q) x[id] = q; else delete x[id]; return x; });
 
   async function order(e) {
-    e.preventDefault(); if (draft) return setErr('This is a preview. Publish your store to take orders.');
+    e.preventDefault(); if (busy) return;
+    if (draft) return setErr('This is a preview of your own store. Open the public link in a private tab to test an order.');
+    if (!lines.length) return setErr('Your order is empty. Add a product first.');
     const f = new FormData(e.target); setBusy(true); setErr('');
-    const { data, error } = await sb.rpc('place_store_order', { p_slug: slug, p_items: lines.map(l => ({ product_id: l.p.id, quantity: l.q })), p_name: f.get('name'), p_phone: f.get('cc') + String(f.get('phone')).replace(/\D/g, '').replace(/^0+/, ''), p_note: f.get('note') || null, p_address: f.get('address') || null });
-    setBusy(false); if (error) return setErr(error.message);
-    setDone(data); setCart({}); setCo(false);
-    const text = 'Hello ' + data.store_name + ', I just placed order ' + data.reference + ':\n' + data.items.map(i => i.quantity + '× ' + i.name).join('\n') + '\nTotal: ' + money(data.total_minor, data.currency) + '\nName: ' + f.get('name');
-    window.open('https://wa.me/' + data.whatsapp + '?text=' + encodeURIComponent(text), '_blank');
+    try {
+      const { data, error } = await sb.rpc('place_store_order', { p_slug: slug, p_items: lines.map(l => ({ product_id: l.p.id, quantity: l.q })), p_name: String(f.get('name') || '').trim(), p_phone: f.get('cc') + String(f.get('phone')).replace(/\D/g, '').replace(/^0+/, ''), p_note: f.get('note') || null, p_address: f.get('address') || null });
+      if (error || !data) throw new Error((error && error.message) || 'No response');
+      const text = 'Hello ' + data.store_name + ', I just placed order ' + data.reference + ':\n' + data.items.map(i => i.quantity + '× ' + i.name).join('\n') + '\nTotal: ' + money(data.total_minor, data.currency) + '\nName: ' + f.get('name');
+      setDone({ ...data, text }); setCart({}); setCo(false);
+    } catch (ex) { setErr('Could not send your order: ' + (ex.message || 'check your connection') + '. Please try again.'); }
+    finally { setBusy(false); }
   }
 
   return (<div className={tk && tk.button === 'outline' ? 'outline' : ''} style={{ ...vars, '--ratio': P.ratio }}>
@@ -73,10 +77,10 @@ export default function Storefront({ params }) {
       <input name="address" placeholder="Delivery address (optional)" maxLength={300} /><textarea name="note" placeholder="Note, size, colour… (optional)" maxLength={500} />
       <p className="mut">Sending this does not pay or confirm anything. {store.name} will confirm on WhatsApp, including delivery and payment.</p>
       {err && <p className="err">{err}</p>}
-      <button className="btn gold" disabled={busy || !lines.length}>{busy ? 'Sending…' : 'Send order on WhatsApp'}</button></form></div>}
+      <button type="submit" className="btn gold sticky" disabled={busy}>{busy ? 'Sending…' : 'Send order on WhatsApp'}</button></form></div>}
 
-    {done && <div className="modal"><div className="sheet"><h2>Order sent</h2><p>Reference <b>{done.reference}</b></p><p className="mut">Status: awaiting confirmation from {done.store_name}. If WhatsApp did not open, message them with your reference.</p>
-      <a className="btn gold" href={'https://wa.me/' + done.whatsapp + '?text=' + encodeURIComponent('Hello, my order reference is ' + done.reference)} target="_blank" rel="noreferrer">Open WhatsApp</a><button className="btn" onClick={() => setDone(null)}>Close</button></div></div>}
+    {done && <div className="modal"><div className="sheet"><h2>Order sent</h2><p>Reference <b>{done.reference}</b></p><p className="mut">Your order is saved and awaiting confirmation from {done.store_name}. Tap the button to send the details to them on WhatsApp.</p>
+      <a className="btn gold" href={'https://wa.me/' + done.whatsapp + '?text=' + encodeURIComponent(done.text)} target="_blank" rel="noreferrer">Send details on WhatsApp</a><button className="btn" onClick={() => setDone(null)}>Close</button></div></div>}
     <footer className="ft">Store by <a href="/">Zyron</a></footer>
   </div>);
 }

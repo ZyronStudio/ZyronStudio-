@@ -282,6 +282,7 @@ SCR.more = function () {
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +
     m('user', 'Invoice & account settings', 'Bank details, invoice defaults, notifications', '#/settings') +
     m('card', 'Plan & billing', 'Trial status and pricing', '#/plan') +
+    m('spark', 'Video tutorial', 'Watch how Zyron Studio works', '', 'st-video') +
     m('help', 'Help & FAQ', 'Tutorial, answers and support', '#/help') +
     m('share', 'Invite a friend', 'Share Zyron Studio on WhatsApp', null, 'invite') +
     m('phone', 'Install the app', 'Add Zyron Studio to your home screen', null, 'install') +

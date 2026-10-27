@@ -183,14 +183,15 @@ SCR.shome = function () {
   var live = s.status === 'published', pend = ST.orders.filter(function (o) { return o.status === 'awaiting_confirmation'; }), pub = ST.prods.filter(function (p) { return p.status === 'published'; }).length;
   var tr = ST.sub && ST.sub.status === 'trialing' && ST.sub.trial_ends_at ? 'Free trial until ' + new Date(ST.sub.trial_ends_at).toLocaleDateString() : '';
   var unpaid = (S.invoices || []).filter(function (i) { return ['sent', 'viewed', 'partial', 'overdue'].indexOf(i.status) > -1; }).length;
-  var h = '<div class="card" style="display:flex;gap:14px;align-items:center">' + logoEl(56) + '<div style="min-width:0"><b style="font-size:19px;display:block;overflow-wrap:anywhere">' + esc(s.name) + '</b><span class="pill ' + (live ? 'paid' : '') + '">' + (live ? 'Live' : s.status === 'suspended' ? 'Suspended' : 'Not published') + '</span></div></div>' +
+  var h = vidCard() + '<div class="card" style="display:flex;gap:14px;align-items:center">' + logoEl(56) + '<div style="min-width:0"><b style="font-size:19px;display:block;overflow-wrap:anywhere">' + esc(s.name) + '</b><span class="pill ' + (live ? 'paid' : '') + '">' + (live ? 'Live' : s.status === 'suspended' ? 'Suspended' : 'Not published') + '</span></div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:12px"><span class="lbl">Your store link</span><b style="overflow-wrap:anywhere;color:var(--gold)">' + esc(location.host + '/store/' + s.slug) + '</b>' +
-    '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' + (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share link</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div>' +
+    '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' + '<button class="btn btn-grow" data-act="st-copy">Copy link</button>' + (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share link</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div>' +
     (!live && s.status !== 'suspended' && !pub ? '<span class="hint" style="margin:0">Add at least one product, then publish.</span>' : '') + (live ? '<button class="link-btn" style="align-self:flex-start" data-act="st-unpublish">Take store offline</button>' : '') + '</div>' +
     '<button class="card" data-act="go" data-to="#/theme" style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-top:0"><span><b>Customise your store</b><span class="hint" style="display:block;margin:2px 0 0">Theme, colours, logo and style</span></span><span style="font-size:20px">›</span></button>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0">' + tile(pub, 'Products in store') + tile(pend.length, 'Orders to confirm') + '</div>';
   if (unpaid) h += '<button class="card" data-act="go" data-to="#/billing" style="width:100%;text-align:left;display:flex;justify-content:space-between"><span><b>' + unpaid + ' unpaid invoice' + (unpaid > 1 ? 's' : '') + '</b><span class="hint" style="display:block;margin:2px 0 0">Tap to follow up</span></span><span>›</span></button>';
   h += '<div class="lbl" style="margin:16px 0 8px">Recent orders</div>' + (ST.orders.length ? ST.orders.slice(0, 3).map(orderCard).join('') + '<button class="link-btn" data-act="go" data-to="#/orders">See all orders</button>' : '<p class="hint">No orders yet. Share your link and they will show up here.</p>');
+  h += '<p class="hint" style="text-align:center;margin-top:18px">Need an invoice for a customer? <button class="link-btn" data-act="go" data-to="#/new">Create one</button></p>';
   if (tr) h += '<p class="hint" style="text-align:center;margin-top:18px">' + esc(tr) + '</p>';
   return shell(s.name, h, { right: '<button class="icon-btn" data-act="st-settings" aria-label="Store settings">' + ic('user') + '</button>' }) + H.navHTML('home');
 };
@@ -208,7 +209,7 @@ SCR.sproducts = function () {
 SCR.sorders = function () {
   var g = gate(); if (g) return shell('Orders', g) + H.navHTML('orders');
   if (!ST.store) return setup();
-  return shell('Orders', ST.orders.length ? ST.orders.map(orderCard).join('') : H.empty('No orders yet', 'When a customer orders from your store, it appears here and on your WhatsApp.', '')) + H.navHTML('orders');
+  return shell('Orders', alertCard() + (ST.orders.length ? ST.orders.map(orderCard).join('') : H.empty('No orders yet', 'When a customer orders from your store, it appears here and on your WhatsApp.', ''))) + H.navHTML('orders');
 };
 document.addEventListener('input', function (e) { if (e.target && e.target.id === 'st_q') { ST.q = e.target.value; var g = document.getElementById('st_grid'); if (g) g.innerHTML = gridHTML(); } });
 ACT['st-sec'] = function (t) { ST.sec = t.dataset.s; rerender(); };
@@ -310,6 +311,9 @@ function sections() { var o = {}; ST.prods.forEach(function (p) { if (p.category
 function byId(id) { return ST.prods.filter(function (p) { return p.id === id; })[0]; }
 
 ACT['st-reload'] = function () { ST.loaded = false; load(); };
+function vidCard() { return '<button class="card" data-act="st-video" style="width:100%;text-align:left;display:flex;gap:12px;align-items:center;margin-top:0;border-color:var(--gold)"><span style="width:44px;height:44px;border-radius:99px;background:var(--gold);color:#000;display:grid;place-items:center;font-size:18px;flex:none">▶</span><span><b>Watch the video tutorial</b><span class="hint" style="display:block;margin:2px 0 0">45 seconds: set up, add products, share your link</span></span></button>'; }
+ACT['st-video'] = function () { Z.openSheet('Video tutorial', '<video controls playsinline preload="metadata" poster="/tutorial-poster.jpg" style="width:100%;max-height:68vh;border-radius:12px;background:#000"><source src="/tutorial.mp4" type="video/mp4"></video><span class="hint">Tap play. You can open this again any time from Home.</span>'); try { localStorage.setItem('zs_vid', '1'); } catch (e) { } };
+ACT['st-copy'] = function () { var u = link(ST.store); function ok() { toast('Link copied'); } function fb() { var i = document.createElement('input'); i.value = u; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast(u); } i.remove(); } if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(ok, fb); else fb(); };
 ACT['st-share'] = function () { window.open('https://wa.me/?text=' + encodeURIComponent('Shop ' + ST.store.name + ' here: ' + link(ST.store)), '_blank'); };
 ACT['st-new'] = function () { photosReset(); EDIT = { store_product_images: [] }; Z.openSheet('New product', prodForm()); };
 ACT['st-edit'] = function (t) { var p = byId(t.dataset.id); if (!p) return; photosReset(); EDIT = Object.assign({}, p, { store_product_images: (p.store_product_images || []).slice() }); Z.openSheet('Edit product', prodForm(EDIT)); };
@@ -433,3 +437,33 @@ document.addEventListener('input', function (e) {
 
 Z.storeReset = function () { TS = null; SU = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
 })();
+
+/* ---- order alerts: only for real new orders ---- */
+var NT = { seen: null, on: false };
+function canNotify() { return 'Notification' in window; }
+function alertCard() {
+  if (!canNotify()) return '';
+  if (Notification.permission === 'granted') return '<p class="hint" style="margin:0 0 10px">Order alerts are on while Zyron Studio is open.</p>';
+  if (Notification.permission === 'denied') return '';
+  return '<button class="card" data-act="st-alerts" style="width:100%;text-align:left;margin-top:0"><b>Get an alert for new orders</b><span class="hint" style="display:block;margin:2px 0 0">We only notify you when a customer places an order.</span></button>';
+}
+ACT['st-alerts'] = async function () { try { var r = await Notification.requestPermission(); toast(r === 'granted' ? 'Order alerts on' : 'Alerts not allowed'); } catch (e) { } rerender(); };
+async function pollOrders() {
+  if (!S.user || !ST.store || document.visibilityState !== 'visible') return;
+  try {
+    var r = await sb().from('store_orders').select('id,reference,total_minor,currency,customer_name,created_at').eq('store_id', ST.store.id).order('created_at', { ascending: false }).limit(20);
+    if (r.error || !r.data) return;
+    var ids = r.data.map(function (o) { return o.id; });
+    if (NT.seen === null) { NT.seen = ids; return; }
+    var fresh = r.data.filter(function (o) { return NT.seen.indexOf(o.id) < 0; });
+    NT.seen = ids;
+    if (fresh.length) {
+      var o = fresh[0], msg = 'New order ' + o.reference + ' — ' + (o.customer_name || 'customer') + ', ' + m(o.total_minor, o.currency);
+      toast(fresh.length > 1 ? fresh.length + ' new orders' : msg);
+      try { if (canNotify() && Notification.permission === 'granted') new Notification('Zyron Studio', { body: msg, icon: '/icon-192.png' }); } catch (e) { }
+      await load(true); var ae = document.activeElement; if (!ae || !/INPUT|TEXTAREA|SELECT/.test(ae.tagName)) rerender();
+    }
+  } catch (e) { }
+}
+setInterval(pollOrders, 45000);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') pollOrders(); });
