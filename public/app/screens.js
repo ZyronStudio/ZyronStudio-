@@ -338,14 +338,26 @@ SCR.settings = function () {
     '<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="eyebrow">Account</div><div class="kv" style="border:0"><span>Signed in as</span><b>' + esc((S.user && S.user.email) || '') + '</b></div></div></form>' +
     '</div><div class="totalbar"><button class="btn btn-gold btn-block" type="submit" form="setform" id="s_btn">Save changes</button></div>';
 };
+var PLANS = [
+  { id: 'invoicing', name: 'Invoicing', who: 'Freelancers, tutors, contractors, anyone who bills clients', m: 3000, y: 30000, f: ['100 invoices every 30 days', 'Send on WhatsApp, email or link', 'Know when clients open invoices', 'Part payments, reminders, overdue tracking', '5 premium invoice themes with your logo', 'Templates and recurring invoices'] },
+  { id: 'store', name: 'Store', who: 'Sellers of products: fashion, wigs, shoes, beauty, gadgets', m: 5000, y: 50000, f: ['Your own online store link', 'Unlimited products with photos', 'Theme Studio: colours, logo, fonts, style', 'Orders straight to your WhatsApp', 'Sales dashboard and order alerts', 'Basic invoices to confirm big orders'] },
+  { id: 'business', name: 'Store + Invoicing', who: 'Sellers who also bill customers, rent, or take custom orders', m: 7000, y: 70000, best: 1, f: ['Everything in Store', 'Everything in Invoicing', 'Invoice a store customer in one tap', 'One login and one customer list'] }
+];
+var PLAN_Y = false;
 SCR.plan = function () {
-  var c = S.cap || {}, dl = c.trial_ends_at ? Math.max(0, Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000)) : 0;
+  var c = S.cap || {}, dl = c.trial_ends_at ? Math.max(0, Math.ceil((new Date(c.trial_ends_at) - Date.now()) / 86400000)) : 0, fm = function (n) { return '₦' + Z.fmtNum(n); };
+  var cards = PLANS.map(function (p) {
+    return '<div class="card" style="display:flex;flex-direction:column;gap:10px;' + (p.best ? 'border-color:var(--gold)' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">' + p.name + '</b>' + (p.best ? '<span class="pill paid">Best value</span>' : '') + '</div><span class="hint" style="margin:0">' + p.who + '</span>' +
+      '<div><span style="font-size:26px;font-weight:700;letter-spacing:-.02em">' + fm(PLAN_Y ? p.y : p.m) + '</span> <span class="hint" style="margin:0">' + (PLAN_Y ? 'per year' : 'per month') + '</span>' + (PLAN_Y ? '<div class="hint" style="margin:2px 0 0;color:var(--gold)">2 months free (save ' + fm(p.m * 2) + ')</div>' : '') + '</div>' +
+      p.f.map(function (x) { return '<div style="display:flex;gap:10px;align-items:center">' + ic('check', 'ic-sm') + '<span>' + x + '</span></div>'; }).join('') +
+      '<button class="btn ' + (p.best ? 'btn-gold' : '') + ' btn-block" data-act="plan-soon" data-p="' + p.id + '">Choose ' + p.name + '</button></div>';
+  }).join('');
   return '<div class="screen">' + bar('Plan & billing') +
     '<section class="card core"><div class="eyebrow">Your plan</div><div class="big" style="font-size:28px">' + (c.plan === 'trial' ? 'Free trial' : esc(String(c.plan || '').replace(/^./, function (x) { return x.toUpperCase(); }))) + '</div><div class="line">' + (c.plan === 'trial' ? dl + ' day' + (dl === 1 ? '' : 's') + ' left · everything unlocked' : 'Active') + '</div></section>' +
-    '<div class="two"><div class="card"><div class="eyebrow">Monthly</div><div class="amt" style="font-size:22px;font-weight:700;margin-top:4px">₦10,000</div><div class="hint">per month</div></div><div class="card" style="border-color:var(--gold)"><div class="eyebrow" style="color:var(--gold)">Yearly · save ₦20,000</div><div class="amt" style="font-size:22px;font-weight:700;margin-top:4px">₦100,000</div><div class="hint">per year</div></div></div>' +
-    '<div class="card" style="display:flex;flex-direction:column;gap:10px">' + ['100 invoices every 30 days', 'Send on WhatsApp, email or link', 'Know when clients open invoices', 'Part payments, reminders and overdue tracking', '5 premium invoice themes with your logo', 'Templates and recurring drafts'].map(function (x) { return '<div style="display:flex;gap:10px;align-items:center">' + ic('check', 'ic-sm') + '<span>' + x + '</span></div>'; }).join('') + '</div>' +
-    '<button class="btn btn-gold btn-block" data-act="plan-soon">Choose a plan</button><p class="hint" style="text-align:center;margin:0">Card and bank payments for plans are being switched on. Your trial and your invoices are unaffected.</p></div>' + navHTML('more');
+    '<div class="seg"><button type="button" data-act="plan-bill" data-v="m" aria-pressed="' + !PLAN_Y + '">Monthly</button><button type="button" data-act="plan-bill" data-v="y" aria-pressed="' + PLAN_Y + '">Yearly · 2 months free</button></div>' + cards +
+    '<p class="hint" style="text-align:center;margin:0">Card and bank payments for plans are being switched on. Your trial, store and invoices are unaffected, and you will be told here before your trial ends.</p></div>' + navHTML('more');
 };
+SCR.plan.toggle = function (y) { PLAN_Y = !!y; };
 
 /* ================= PUBLIC INVOICE (client view) ================= */
 SCR.publicLoading = function () { return '<div class="pub"><div class="skel" style="min-height:420px"></div></div>'; };

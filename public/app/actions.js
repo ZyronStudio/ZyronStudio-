@@ -443,7 +443,8 @@ var ACT = {
   'ob-theme': function (t) { OB.theme = t.dataset.v; Z.$$('#o_themes .sw').forEach(function (b) { b.setAttribute('aria-pressed', String(b === t)); }); },
   invite: function () { var u = location.origin + location.pathname; window.open('https://wa.me/?text=' + encodeURIComponent('I use Zyron Studio to run my online store and send professional invoices. Try it free for 2 months: ' + u), '_blank', 'noopener'); },
   install: installSheet,
-  'plan-soon': function () { Z.openSheet('Plans open soon', '<p style="margin:0;color:var(--muted)">Subscriptions (₦10,000 per month or ₦100,000 per year) are being switched on. Your free trial continues and nothing you have created is affected. We will let you know here before your trial ends.</p><button class="btn btn-gold btn-block" data-act="sheet-close">Got it</button>'); }
+  'plan-bill': function (t) { Z.SCR.plan.toggle(t.dataset.v === 'y'); render(); },
+  'plan-soon': function () { Z.openSheet('Plans open soon', '<p style="margin:0;color:var(--muted)">Subscriptions (Invoicing ₦3,000, Store ₦5,000, Store + Invoicing ₦7,000 per month; yearly is 2 months free) are being switched on. Your free trial continues and nothing you have created is affected. We will let you know here before your trial ends.</p><button class="btn btn-gold btn-block" data-act="sheet-close">Got it</button>'); }
 };
 async function refreshDetail(id) { S.detail[id] = null; await Z.loadAll(true); render(); }
 function tplNameSheet(invId) {
