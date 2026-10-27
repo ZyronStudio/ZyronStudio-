@@ -231,9 +231,9 @@ function prodForm(p) {
   return '<div style="display:flex;flex-direction:column;gap:12px">' +
     '<div class="field"><label>Photos</label><div id="p_photos">' + photoBox() + '</div><input id="p_files" type="file" accept="image/*" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"></div>' +
     '<div class="field"><label for="p_name">Name *</label><input class="in" id="p_name" maxlength="120" value="' + esc(p.name || '') + '"></div>' +
-    '<div class="field"><label for="p_price">Price (' + esc(ST.store.currency) + ') *</label><input class="in" id="p_price" type="number" inputmode="decimal" min="0" step="0.01" value="' + (p.price_minor != null ? p.price_minor / 100 : '') + '"></div>' +
-    '<div class="field"><label for="p_cat">Section (e.g. Dresses, Bags)</label><input class="in" id="p_cat" maxlength="40" list="p_cats" value="' + esc(p.category || '') + '"><datalist id="p_cats">' + sections().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
-    '<div class="field"><label for="p_desc">Description</label><textarea class="in" id="p_desc" maxlength="1000">' + esc(p.description || '') + '</textarea></div>' +
+    '<div class="field"><label for="p_price">Price (' + esc(ST.store.currency) + ') *</label><input id="p_price" class="in money" type="text" inputmode="decimal" autocomplete="off" value="' + (p.price_minor != null ? Z.fmtNum(p.price_minor / 100) : '') + '"></div>' +
+    '<div class="field"><label for="p_cat">Section (picked for you, change if needed)</label><input class="in" id="p_cat" maxlength="40" list="p_cats" value="' + esc(p.category || '') + '"><datalist id="p_cats">' + sections().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div class="field"><label for="p_desc">Description</label><button type="button" class="link-btn" data-act="st-suggest" style="align-self:flex-start;margin-bottom:6px">Write it for me</button><textarea class="in" id="p_desc" maxlength="1000">' + esc(p.description || '') + '</textarea></div>' +
     '<div class="two"><div class="field"><label for="p_stock">Availability</label><select class="in" id="p_stock">' + opts([['in_stock', 'In stock'], ['out_of_stock', 'Out of stock'], ['made_to_order', 'Made to order']], p.stock_status || 'in_stock') + '</select></div>' +
     '<div class="field"><label for="p_status">Visibility</label><select class="in" id="p_status">' + opts([['published', 'Shown'], ['draft', 'Hidden']], p.status || 'published') + '</select></div></div>' +
     '<div class="err" id="p_err" role="alert"></div><div class="btn-row"><button class="btn btn-gold btn-grow" data-act="st-save" data-id="' + esc(p.id || '') + '">Save product</button>' + (p.id ? '<button class="btn btn-danger" data-act="st-del" data-id="' + esc(p.id) + '">Remove</button>' : '') + '</div></div>';
@@ -298,6 +298,14 @@ document.addEventListener('change', async function (e) {
   if (errs.length) perr('p_err', errs.join(' '));
 });
 function perr(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+var KW = [['Dresses', /dress|gown|abaya|kaftan|skirt|jumpsuit/i], ['Shoes', /shoe|sneaker|sandal|heel|slide|boot|loafer|slipper/i], ['Bags', /\bbag|purse|handbag|clutch|backpack|tote/i], ['Tops', /\btop\b|shirt|blouse|tee\b|t-shirt|hoodie|sweater|polo/i], ['Trousers', /trouser|jean|short|pant|legging/i], ['Hair', /wig|hair|weave|braid|bundle|closure|frontal/i], ['Beauty', /cream|serum|perfume|lotion|makeup|lip|soap|oil|skincare|fragrance/i], ['Jewellery', /ring|necklace|bracelet|earring|chain|jewel|watch/i], ['Phones & Gadgets', /phone|iphone|samsung|laptop|charger|earbud|airpod|speaker|cable|power ?bank/i], ['Food & Drinks', /cake|chops|rice|jollof|snack|juice|drink|bread|pastry|meal|pizza|chicken|zobo/i], ['Home', /bed|pillow|curtain|rug|kitchen|pot|plate|cup|furniture|decor/i], ['Kids', /baby|kids?|child|toy|diaper/i]];
+function guessSection(n) { for (var i = 0; i < KW.length; i++) if (KW[i][1].test(n)) { var ex = sections().filter(function (c) { return c.toLowerCase() === KW[i][0].toLowerCase(); })[0]; return ex || KW[i][0]; } return ''; }
+function guessDesc(n, cat, price) {
+  var nm = n.trim(); if (!nm) return '';
+  var tail = { Dresses: 'Well finished, comfortable to wear and made to look good on you.', Shoes: 'Comfortable, durable and neat. Check the size list or ask us for your size.', Bags: 'Roomy, sturdy and stylish for everyday use.', Hair: 'Soft, full and easy to style. Ask us about length and colour.', Beauty: 'Gentle on the skin and made for daily use.', Food: 'Freshly made. Order early for same-day delivery.' };
+  var k = Object.keys(tail).filter(function (x) { return (cat || '').indexOf(x) === 0; })[0];
+  return nm + ' — quality you can trust. ' + (k ? tail[k] : 'Carefully selected and ready to order.') + ' Message us on WhatsApp to order or ask any question.';
+}
 function sections() { var o = {}; ST.prods.forEach(function (p) { if (p.category) o[p.category] = 1; }); return Object.keys(o); }
 function byId(id) { return ST.prods.filter(function (p) { return p.id === id; })[0]; }
 
@@ -306,8 +314,18 @@ ACT['st-share'] = function () { window.open('https://wa.me/?text=' + encodeURICo
 ACT['st-new'] = function () { photosReset(); EDIT = { store_product_images: [] }; Z.openSheet('New product', prodForm()); };
 ACT['st-edit'] = function (t) { var p = byId(t.dataset.id); if (!p) return; photosReset(); EDIT = Object.assign({}, p, { store_product_images: (p.store_product_images || []).slice() }); Z.openSheet('Edit product', prodForm(EDIT)); };
 ACT['st-pend-rm'] = function (t) { var p = PH.splice(parseInt(t.dataset.i, 10), 1)[0]; if (p) { try { URL.revokeObjectURL(p.url); } catch (e) { } } photoRefresh(); };
+ACT['st-suggest'] = function () { var n = val('p_name'); if (!n) return perr('p_err', 'Type the product name first'); perr('p_err', ''); var d = document.getElementById('p_desc'); d.value = guessDesc(n, val('p_cat'), 0); d.dataset.auto = '1'; };
+document.addEventListener('input', function (e) {
+  var t = e.target; if (!t) return;
+  if (t.id === 'p_cat') { t.dataset.touched = '1'; return; }
+  if (t.id === 'p_desc') { t.dataset.auto = ''; return; }
+  if (t.id !== 'p_name') return;
+  var c = document.getElementById('p_cat'), d = document.getElementById('p_desc');
+  if (c && !c.dataset.touched && (!c.value || c.dataset.auto)) { var g = guessSection(t.value); c.value = g; c.dataset.auto = g ? '1' : ''; }
+  if (d && (!d.value || d.dataset.auto) && !d.dataset.off && t.value.trim().length > 2) { d.value = guessDesc(t.value, c ? c.value : '', 0); d.dataset.auto = '1'; }
+});
 ACT['st-save'] = async function (t) {
-  var id = t.dataset.id, name = val('p_name'), price = parseFloat(val('p_price'));
+  var id = t.dataset.id, name = val('p_name'), price = Z.num(val('p_price'));
   if (!name) return perr('p_err', 'Enter a product name'); if (!(price >= 0)) return perr('p_err', 'Enter a valid price');
   t.disabled = true; t.textContent = 'Saving…'; perr('p_err', '');
   try {

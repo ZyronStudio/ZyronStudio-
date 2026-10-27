@@ -197,8 +197,8 @@ Z.discAmount = discAmount;
 function itemsHTML() {
   return E().items.map(function (it, idx) {
     return '<div class="item"><input class="in" data-f="d" data-i="' + idx + '" placeholder="Description, e.g. Logo design" maxlength="500" aria-label="Item description" value="' + esc(it.d) + '">' +
-      '<div class="r2"><label>Qty<input class="in" data-f="q" data-i="' + idx + '" type="number" inputmode="decimal" min="0" step="any" value="' + esc(it.q) + '" aria-label="Quantity"></label>' +
-      '<label>Unit price (' + esc(Z.CURRENCIES.indexOf(E().currency) >= 0 ? E().currency : '') + ')<input class="in" data-f="p" data-i="' + idx + '" type="number" inputmode="decimal" min="0" step="any" value="' + esc(it.p) + '" aria-label="Unit price"></label>' +
+      '<div class="r2"><label>Qty<input class="in money" data-f="q" data-i="' + idx + '" type="text" inputmode="decimal" autocomplete="off" value="\' + esc(Z.fmtNum(it.q)) + \'" aria-label="Quantity"></label>' +
+      '<label>Unit price (' + esc(Z.CURRENCIES.indexOf(E().currency) >= 0 ? E().currency : '') + ')<input class="in money" data-f="p" data-i="' + idx + '" type="text" inputmode="decimal" autocomplete="off" value="\' + esc(Z.fmtNum(it.p)) + \'" aria-label="Unit price"></label>' +
       '<button class="rm" type="button" data-act="ed-rm" data-i="' + idx + '" aria-label="Remove item">' + ic('x', 'ic-sm') + '</button></div></div>';
   }).join('');
 }

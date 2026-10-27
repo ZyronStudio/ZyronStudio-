@@ -43,6 +43,12 @@ function $$(s, r) { return Array.prototype.slice.call((r || document).querySelec
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function r2(n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
 function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isFinite(n) ? n : 0; }
+function fmtNum(v) { var s = String(v == null ? '' : v).replace(/[^0-9.]/g, ''); var i = s.indexOf('.'); if (i >= 0) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, ''); var a = s.split('.'); a[0] = a[0].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ','); return a.length > 1 ? a[0] + '.' + a[1].slice(0, 2) : a[0]; }
+document.addEventListener('input', function (e) {
+  var t = e.target; if (!t || !t.classList || !t.classList.contains('money')) return;
+  var pos = t.selectionStart, before = t.value, digits = before.slice(0, pos).replace(/[^0-9.]/g, '').length, out = fmtNum(before);
+  if (out !== before) { t.value = out; var n = 0, k = 0; while (k < out.length && n < digits) { if (/[0-9.]/.test(out[k])) n++; k++; } try { t.setSelectionRange(k, k); } catch (er) { } }
+}, true);
 var SYM = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', CAD: 'CA$', AUD: 'A$' };
 var nfCache = {};
 function money(n, cur) {
@@ -333,7 +339,7 @@ window.Z = { CFG: CFG, THEMES: THEMES, CURRENCIES: CURRENCIES, METHODS: METHODS,
   S: S, $: $, $$: $$, esc: esc, r2: r2, num: num, money: money, moneyParts: moneyParts, lagosToday: lagosToday, addDaysISO: addDaysISO, diffDays: diffDays, fmtDate: fmtDate, fmtDateTime: fmtDateTime, timeAgo: timeAgo,
   ic: ic, zmk: zmk, initials: initials, themeOf: themeOf, clientById: clientById, invById: invById, bal: bal, safeLogo: safeLogo, normPhone: normPhone, shareUrl: shareUrl, errMsg: errMsg,
   toast: toast, openSheet: openSheet, setSheetBody: setSheetBody, closeSheet: closeSheet, hideSheet: hideSheet, isSheetOpen: function () { return sheetOpen; },
-  initSB: initSB, getSB: function () { return sb; }, q: q, loadAll: loadAll, calcTotals: calcTotals, statusLine: statusLine, invoiceHTML: invoiceHTML, ownerPaper: ownerPaper,
+  fmtNum: fmtNum, initSB: initSB, getSB: function () { return sb; }, q: q, loadAll: loadAll, calcTotals: calcTotals, statusLine: statusLine, invoiceHTML: invoiceHTML, ownerPaper: ownerPaper,
   reminderKind: reminderKind, reminderText: reminderText, shareText: shareText, waLink: waLink, copyText: copyText, metrics: metrics, currenciesUsed: currenciesUsed, insights: insights,
   getE: function () { return E; }, setE: function (e) { E = e; }
 };

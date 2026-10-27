@@ -151,7 +151,7 @@ function remindSheet(id, kind) {
 function paySheet(id) {
   var i = Z.invById(id); if (!i) return; var b = Z.bal(i);
   Z.openSheet('Record payment', '<form id="payform" data-id="' + esc(id) + '" novalidate><div class="card" style="padding:10px 16px;margin-bottom:12px"><div class="kv" style="border:0"><span>Balance due</span><b>' + money(b, i.currency) + '</b></div></div>' +
-    '<div class="field"><label for="p_amt">Amount received</label><input class="in" id="p_amt" type="number" inputmode="decimal" step="any" min="0" value="' + b + '"></div><div class="chips" style="margin-top:8px"><button type="button" class="chip" data-act="pay-full" data-v="' + b + '">Full balance</button><button type="button" class="chip" data-act="pay-full" data-v="' + Z.r2(b / 2) + '">Half</button></div>' +
+    '<div class="field"><label for="p_amt">Amount received</label><input class="in money" id="p_amt" type="text" inputmode="decimal" autocomplete="off" value="' + Z.fmtNum(b) + '"></div><div class="chips" style="margin-top:8px"><button type="button" class="chip" data-act="pay-full" data-v="' + b + '">Full balance</button><button type="button" class="chip" data-act="pay-full" data-v="' + Z.r2(b / 2) + '">Half</button></div>' +
     '<div class="two" style="margin-top:12px"><div class="field"><label for="p_method">Method</label><select class="in" id="p_method">' + Object.keys(Z.METHODS).map(function (k) { return '<option value="' + k + '">' + Z.METHODS[k] + '</option>'; }).join('') + '</select></div><div class="field"><label for="p_date">Date received</label><input class="in" id="p_date" type="date" value="' + Z.lagosToday() + '" max="' + Z.addDaysISO(Z.lagosToday(), 1) + '"></div></div>' +
     '<div class="field" style="margin-top:12px"><label for="p_note">Note (optional)</label><input class="in" id="p_note" maxlength="300" placeholder="e.g. Transfer from GTBank"></div><div class="err" id="p_err" role="alert"></div>' +
     '<button class="btn btn-gold btn-block" type="submit" id="p_btn" style="margin-top:6px">Save payment</button></form>');
@@ -356,7 +356,7 @@ var ACT = {
   'del-inv': function (t) { var id = t.dataset.id; confirmSheet('Delete this draft?', 'This cannot be undone.', 'Delete draft', async function () { try { await Z.q(sb.from('invoices').delete().eq('id', id)); await Z.loadAll(true); toast('Draft deleted'); location.replace('#/invoices'); } catch (e) { toast(Z.errMsg(e), true); } }, true); },
   'cancel-inv': function (t) { var id = t.dataset.id; confirmSheet('Cancel this invoice?', 'Your client’s link will stop working. This is for invoices that were sent by mistake and have no payments.', 'Cancel invoice', async function () { try { await Z.q(sb.rpc('cancel_invoice', { p_id: id })); await refreshDetail(id); toast('Invoice cancelled'); } catch (e) { toast(Z.errMsg(e), true); } }, true); },
   'pay-inv': function (t) { paySheet(t.dataset.id); },
-  'pay-full': function (t) { var a = $('#p_amt'); if (a) a.value = t.dataset.v; },
+  'pay-full': function (t) { var a = $('#p_amt'); if (a) a.value = Z.fmtNum(t.dataset.v); },
   'remind-inv': function (t) { remindSheet(t.dataset.id); },
   'remind-kind': function (t) { remindSheet(t.dataset.id, t.dataset.kind); },
   'copy-reminder': function (t) { var i = Z.invById(t.dataset.id); Z.copyText(Z.reminderText(i, t.dataset.kind), 'Reminder copied'); },
