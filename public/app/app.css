@@ -380,3 +380,18 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 .auth>*{animation:up .6s cubic-bezier(.2,.7,.2,1) backwards}.auth>*:nth-child(2){animation-delay:.08s}.auth>*:nth-child(3){animation-delay:.16s}.auth>*:nth-child(4){animation-delay:.24s}.auth>*:nth-child(n+5){animation-delay:.32s}
 @keyframes up{from{opacity:0;transform:translateY(14px)}}
 .auth .word{letter-spacing:.3em}
+
+/* ---------- polish: premium obsidian + gold ---------- */
+.card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:0 1px 0 #ffffff0a inset,0 10px 30px -18px #000}
+.st-pc{transition:transform .15s,border-color .15s,box-shadow .15s}.st-pc:active{transform:scale(.98)}
+.st-pc:hover{border-color:color-mix(in srgb,var(--gold) 55%,var(--line));box-shadow:0 12px 34px -16px color-mix(in srgb,var(--gold) 45%,#000)}
+.st-pc>span:first-child{border-radius:14px!important}.st-pc b{font-size:15px;margin-top:6px}.st-pc{padding:12px!important;gap:5px!important}
+#st_grid{gap:14px!important}
+.btn-gold{box-shadow:0 8px 26px -10px color-mix(in srgb,var(--gold) 70%,transparent)}
+.pill.paid{box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 40%,transparent)}
+.screen>.lbl{letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.chip{border-radius:99px}
+.empty-st{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:44px 20px;border:1.5px dashed var(--line);border-radius:22px;color:var(--muted);grid-column:1/-1}
+.empty-st b{color:var(--text);font-size:17px}
+.empty-st .ico{width:56px;height:56px;border-radius:99px;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold);font-size:24px}
+@media(min-width:560px){#st_grid{grid-template-columns:repeat(3,1fr)!important}}

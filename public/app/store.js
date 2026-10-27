@@ -197,7 +197,7 @@ SCR.shome = function () {
 };
 function gridHTML() {
   var q = (ST.q || '').toLowerCase(), list = ST.prods.filter(function (p) { return (!ST.sec || p.category === ST.sec) && (!q || (p.name + ' ' + (p.category || '')).toLowerCase().indexOf(q) > -1); });
-  return list.length ? list.map(prodCard).join('') : '<p class="hint" style="grid-column:1/-1">' + (ST.prods.length ? 'No products match.' : 'No products yet. Tap “Add product” to start.') + '</p>';
+  return list.length ? list.map(prodCard).join('') : (ST.prods.length ? '<p class="hint" style="grid-column:1/-1">No products match.</p>' : '<div class="empty-st"><span class="ico">＋</span><b>Add your first product</b><span>A photo, a name and a price is all it takes. Then publish and share your link.</span></div>');
 }
 SCR.sproducts = function () {
   var g = gate(); if (g) return shell('Products', g) + H.navHTML('products');
