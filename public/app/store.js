@@ -396,20 +396,23 @@ ACT['st-saveset'] = async function (t) {
 if (S.user && S.loaded) rerender();
 /*TS*/
 /* ---------------- Theme Studio ---------------- */
-var TS = null;
+var TS = null, TSV = 'mobile';
+function tsDirty() { if (!TS || !ST.store) return false; var b = ZTheme.normalize(ST.store.theme, ST.store.category), k = ['primary', 'mode', 'font', 'radius', 'button']; return k.some(function (x) { return String(TS[x]) !== String(b[x]); }); }
+function tsState() { var d = tsDirty(); return '<span class="pill ' + (d ? '' : 'paid') + '">' + (d ? 'Unsaved changes' : 'Saved') + '</span>'; }
 function tsInit() { var st = ST.store; TS = ZTheme.normalize(st.theme, st.category); TS.preset = (st.theme && st.theme.preset) || ''; }
 function styleStr(tk) { var v = ZTheme.cssVars(tk); return Object.keys(v).map(function (k) { return k + ':' + v[k]; }).join(';'); }
 function tsPreviewHTML(tk) {
   var st = ST.store, ps = ST.prods.filter(function (p) { return p.status === 'published'; }).slice(0, 2), btn = tk.button === 'outline' ? 'background:transparent;color:var(--acc);border:2px solid var(--acc)' : 'background:var(--acc);color:var(--onacc);border:2px solid var(--acc)';
   var logo = st.logo_path ? '<img alt="" src="' + esc(img(st.logo_path)) + '" style="width:40px;height:40px;object-fit:cover;border-radius:calc(var(--r) - 4px)">' : '<span style="width:40px;height:40px;border-radius:calc(var(--r) - 4px);background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-weight:800">' + esc(st.name.charAt(0).toUpperCase()) + '</span>';
+  var desk = TSV === 'desktop'; if (desk) ps = ST.prods.filter(function (p) { return p.status === 'published'; }).slice(0, 4);
   function tile(p) { var im = p && (p.store_product_images || [])[0]; return '<div style="flex:1;min-width:0"><div style="aspect-ratio:4/5;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">' + (im ? '<img alt="" style="width:100%;height:100%;object-fit:cover" src="' + esc(img(im.path)) + '">' : '') + '</div><div style="font-size:12px;margin-top:5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p ? esc(p.name) : 'Your product') + '</div><div style="font-size:12px;color:var(--acc);font-weight:700">' + (p ? m(p.price_minor, st.currency) : '') + '</div></div>'; }
-  return '<div style="' + styleStr(tk) + ';background:var(--bg);color:var(--tx);font-family:var(--font);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:10px;align-items:center">' + logo + '<b style="font-size:17px;letter-spacing:-.02em">' + esc(st.name) + '</b></div>' +
-    '<div style="color:var(--mut);font-size:13px">' + esc(st.description || 'Your products, your brand.') + '</div><div style="display:flex;gap:10px">' + tile(ps[0]) + tile(ps[1]) + '</div>' +
+  return '<div style="' + styleStr(tk) + ';background:var(--bg);color:var(--tx);font-family:var(--font);border:1px solid var(--line);border-radius:18px;padding:' + (desk ? '22px;min-width:620px;font-size:15px' : '16px') + ';display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:10px;align-items:center">' + logo + '<b style="font-size:17px;letter-spacing:-.02em">' + esc(st.name) + '</b></div>' +
+    '<div style="color:var(--mut);font-size:13px">' + esc(st.description || 'Your products, your brand.') + '</div><div style="display:flex;gap:10px">' + (desk ? [0, 1, 2, 3].map(function (k) { return tile(ps[k]); }).join('') : tile(ps[0]) + tile(ps[1])) + '</div>' +
     '<div style="' + btn + ';border-radius:var(--rb);padding:11px;text-align:center;font-weight:700;font-size:14px">Add to order</div></div>';
 }
 function tsRefresh() {
   var tk = ZTheme.build(TS, ST.store.category), pv = document.getElementById('ts_prev'); if (!pv) return;
-  pv.innerHTML = tsPreviewHTML(tk);
+  pv.innerHTML = tsPreviewHTML(tk); var sp = document.getElementById('ts_state'); if (sp) sp.innerHTML = tsState();
   var w = document.getElementById('ts_warn'); if (w) w.innerHTML = tk.notes.length ? tk.notes.map(function (n) { return '<div class="hint" style="margin:0;color:var(--gold)">• ' + esc(n) + '</div>'; }).join('') : '<div class="hint" style="margin:0">✓ Text and buttons are easy to read (contrast ' + tk.contrast.text + ':1).</div>';
   var hx = document.getElementById('ts_hex'), co = document.getElementById('ts_col'); if (hx && document.activeElement !== hx) hx.value = TS.primary; if (co) co.value = TS.primary;
   Array.prototype.forEach.call(document.querySelectorAll('[data-ts]'), function (b) { var k = b.dataset.ts, v = b.dataset.v; b.setAttribute('aria-pressed', String(k === 'preset' ? TS.preset === v : TS[k] === v)); });
@@ -421,7 +424,8 @@ SCR.theme = function () {
   if (!TS) tsInit();
   var tk = ZTheme.build(TS, ST.store.category), st = ST.store;
   return '<div class="screen">' + H.bar('Theme Studio') + '<p class="hint" style="margin:0 0 12px">Pick a look. Your whole store updates to match. Nothing is live until you save.</p><button class="link-btn" data-act="st-settings" style="margin:-6px 0 8px">Edit store name, WhatsApp, about and address</button>' +
-    '<div id="ts_prev">' + tsPreviewHTML(tk) + '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="seg" style="width:190px"><button type="button" data-act="ts-view" data-v="mobile" aria-pressed="' + (TSV === 'mobile') + '">Mobile</button><button type="button" data-act="ts-view" data-v="desktop" aria-pressed="' + (TSV === 'desktop') + '">Desktop</button></div><span id="ts_state">' + tsState() + '</span></div>' +
+    '<div id="ts_prev" style="' + (TSV === 'desktop' ? 'overflow-x:auto' : '') + '">' + tsPreviewHTML(tk) + '</div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:12px;margin-top:12px"><span class="lbl">Quick look</span><div class="chiprow">' + ZTheme.PRESETS.map(function (p) { return '<button class="chip" data-act="ts-preset" data-ts="preset" data-v="' + p.id + '" aria-pressed="' + (TS.preset === p.id) + '"><span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + p.primary + ';margin-right:6px"></span>' + p.name + '</button>'; }).join('') + '</div>' +
     '<div class="field"><label for="ts_hex">Main colour</label><div style="display:grid;grid-template-columns:56px 1fr;gap:8px"><input class="in" id="ts_col" type="color" value="' + TS.primary + '" style="padding:4px;height:46px"><input class="in" id="ts_hex" maxlength="7" value="' + TS.primary + '" placeholder="#10B981" autocapitalize="off" spellcheck="false"></div><span class="hint" style="margin:0">Pick one colour. The rest of the palette is built for you.</span></div>' +
     '<div class="field"><label>Mode</label>' + seg('mode', [['dark', 'Dark'], ['light', 'Light']]) + '</div><div id="ts_warn"></div></div>' +
@@ -436,6 +440,7 @@ SCR.theme = function () {
 ACT['ts-set'] = function (t) { TS[t.dataset.ts] = t.dataset.v; if (t.dataset.ts !== 'preset') TS.preset = TS.preset; tsRefresh(); };
 ACT['ts-preset'] = function (t) { var p = ZTheme.PRESETS.filter(function (x) { return x.id === t.dataset.v; })[0]; if (!p) return; TS = { preset: p.id, primary: p.primary, mode: p.mode, font: p.font, radius: p.radius, button: p.button }; rerender(); };
 ACT['ts-reset'] = function () { TS = null; tsInit(); TS = Object.assign(ZTheme.defaults(ST.store.category), { preset: '' }); rerender(); toast('Back to your category look. Tap Save to apply.'); };
+ACT['ts-view'] = function (t) { TSV = t.dataset.v; rerender(); };
 ACT['ts-save'] = async function (t) {
   t.disabled = true; perr('ts_err', '');
   try {
