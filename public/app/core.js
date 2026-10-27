@@ -49,6 +49,15 @@ document.addEventListener('input', function (e) {
   var pos = t.selectionStart, before = t.value, digits = before.slice(0, pos).replace(/[^0-9.]/g, '').length, out = fmtNum(before);
   if (out !== before) { t.value = out; var n = 0, k = 0; while (k < out.length && n < digits) { if (/[0-9.]/.test(out[k])) n++; k++; } try { t.setSelectionRange(k, k); } catch (er) { } }
 }, true);
+function countUp(root) {
+  var els = (root || document).querySelectorAll('.kpi b'); if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  Array.prototype.forEach.call(els, function (el) {
+    if (el.dataset.cu) return; var t = el.textContent, m = t.match(/^(\D*)([\d,]+(?:\.\d+)?)(.*)$/); if (!m) return;
+    var end = parseFloat(m[2].replace(/,/g, '')); if (!(end > 0)) return; el.dataset.cu = 1; var t0 = performance.now(), dec = (m[2].split('.')[1] || '').length;
+    (function f(now) { var p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3), v = end * e; el.textContent = m[1] + v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + m[3]; if (p < 1) requestAnimationFrame(f); })(t0);
+  });
+}
+new MutationObserver(function () { countUp(); }).observe(document.documentElement, { childList: true, subtree: true });
 var SYM = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', CAD: 'CA$', AUD: 'A$' };
 var nfCache = {};
 function money(n, cur) {
