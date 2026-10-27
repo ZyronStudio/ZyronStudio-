@@ -9,9 +9,10 @@ var ACC = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a
 var ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' };
 var NEXT = { awaiting_confirmation: ['confirmed', 'cancelled'], confirmed: ['preparing', 'cancelled'], preparing: ['ready'], ready: ['completed'] };
 var CC = [['234', 'Nigeria +234'], ['233', 'Ghana +233'], ['254', 'Kenya +254'], ['27', 'South Africa +27'], ['1', 'USA / Canada +1'], ['44', 'United Kingdom +44'], ['971', 'UAE +971']];
-function phoneField(id, label, full) {
-  full = String(full || '').replace(/\D/g, ''); var cc = '234', no = full;
-  CC.slice().sort(function (a, b) { return b[0].length - a[0].length; }).some(function (c) { if (full.indexOf(c[0]) === 0 && full.length > c[0].length + 6) { cc = c[0]; no = full.slice(c[0].length); return true; } });
+function phoneField(id, label, full, cc0, no0) {
+  var cc = '234', no;
+  if (cc0 !== undefined) { cc = cc0 || '234'; no = no0 || ''; }
+  else { full = String(full || '').replace(/\D/g, ''); no = full; CC.slice().sort(function (a, b) { return b[0].length - a[0].length; }).some(function (c) { if (full.indexOf(c[0]) === 0 && full.length > c[0].length + 6) { cc = c[0]; no = full.slice(c[0].length); return true; } }); }
   return '<div class="field"><label for="' + id + '_no">' + label + '</label><div style="display:grid;grid-template-columns:152px 1fr;gap:8px"><select class="in" id="' + id + '_cc" aria-label="Country code">' + CC.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === cc ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select><input class="in" id="' + id + '_no" type="tel" inputmode="tel" placeholder="801 234 5678" value="' + esc(no) + '"></div></div>';
 }
 function getPhone(id) { var no = val(id + '_no').replace(/\D/g, '').replace(/^0+/, ''), full = val(id + '_cc') + no; return no.length >= 6 && full.length <= 15 ? full : ''; }
@@ -23,12 +24,7 @@ function slugify(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').
 function link(s) { return location.origin + '/store/' + s.slug; }
 function opts(list, cur) { return list.map(function (c) { var v = c[0] || c, l = c[1] || c; return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + l + '</option>'; }).join(''); }
 function logoEl(sz) { var s = ST.store; return s && s.logo_path ? '<img alt="" src="' + esc(img(s.logo_path)) + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;object-fit:cover;flex:none">' : '<span style="width:' + sz + 'px;height:' + sz + 'px;border-radius:14px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font-weight:800;flex:none">' + esc(((s && s.name) || 'S').charAt(0).toUpperCase()) + '</span>'; }
-async function putLogo(file, storeId, old) {
-  var blob = await toWebp(file, 512), path = storeId + '/logo-' + Date.now() + '.webp', c = sb();
-  var up = await c.storage.from('store-media').upload(path, blob, { contentType: 'image/webp' }); if (up.error) throw up.error;
-  var r = await c.from('stores').update({ logo_path: path }).eq('id', storeId); if (r.error) throw r.error;
-  if (old) await c.storage.from('store-media').remove([old]);
-}
+
 function rerender() { window.ZA.render(); }
 
 async function load(force) {
@@ -49,17 +45,118 @@ async function load(force) {
   ST.loading = false; rerender();
 }
 
-function setup() {
-  return '<div class="screen">' + H.bar('Create your store', { back: false }) +
-    '<p class="hint" style="margin:0 0 14px">Your customers browse, pick items and send the order to your WhatsApp. Ready in a minute.</p><div class="card" style="display:flex;flex-direction:column;gap:12px">' +
-    '<div class="field"><label for="s_name">Store name *</label><input class="in" id="s_name" maxlength="60" placeholder="Maison Adé"></div>' +
-    '<div class="field"><label for="s_slug">Store link</label><input class="in" id="s_slug" maxlength="40" placeholder="maison-ade"><span class="hint" style="margin:0">' + esc(location.host) + '/store/…</span></div>' +
-    '<div class="field"><label for="s_cat">What do you sell?</label><select class="in" id="s_cat">' + opts(CATS) + '</select></div>' +
-    phoneField('s_wa', 'WhatsApp number for orders *', '') +
-    '<div class="field"><label for="s_cur">Currency your prices are in</label><select class="in" id="s_cur">' + opts(CURS, (S.profile && S.profile.currency) || 'NGN') + '</select></div>' +
-    '<div class="field"><label for="s_logo">Store logo (optional)</label><input class="in" id="s_logo" type="file" accept="image/*"><span class="hint" style="margin:0">No logo? We show your store name in a clean style.</span></div>' +
-    '<div class="err" id="s_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="st-create">Create store</button></div></div>' + H.navHTML('home');
+/* ---------------- Store setup: 4 steps (Business, Details, Design, Review) ---------------- */
+var SU = null;
+function suReset() {
+  var cur = (S.profile && S.profile.currency) || 'NGN'; if (!CURS.some(function (c) { return c[0] === cur; })) cur = 'NGN';
+  SU = { step: 0, name: '', slug: '', cat: 'fashion', cc: '234', no: '', cur: cur, desc: '', ig: '', addr: '', logo: null, th: Object.assign(ZTheme.defaults('fashion'), { preset: '' }), thTouched: false };
 }
+function suStepper(n) {
+  var L = ['Business', 'Details', 'Design', 'Review'];
+  return '<div style="display:flex;align-items:flex-start;margin:4px 0 18px">' + L.map(function (l, i) {
+    var on = i === n, done = i < n;
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative">' +
+      (i ? '<span style="position:absolute;top:15px;right:50%;width:100%;height:2px;background:' + (i <= n ? 'var(--gold)' : 'var(--line)') + '"></span>' : '') +
+      '<span style="position:relative;z-index:1;width:32px;height:32px;border-radius:99px;display:grid;place-items:center;font-weight:700;font-size:14px;border:2px solid ' + (on || done ? 'var(--gold)' : 'var(--line)') + ';background:' + (on ? 'var(--gold)' : 'var(--surface)') + ';color:' + (on ? '#17120a' : done ? 'var(--gold)' : 'var(--muted)') + '">' + (done ? '✓' : (i + 1)) + '</span>' +
+      '<span style="font-size:12px;color:' + (on ? 'var(--text)' : 'var(--muted)') + '">' + l + '</span></div>';
+  }).join('') + '</div>';
+}
+function suPreview(tk) {
+  var nm = SU.name.trim() || 'Your store', btn = tk.button === 'outline' ? 'background:transparent;color:var(--acc);border:2px solid var(--acc)' : 'background:var(--acc);color:var(--onacc);border:2px solid var(--acc)';
+  var logo = SU.logo ? '<img alt="" src="' + esc(SU.logo.url) + '" style="width:40px;height:40px;object-fit:cover;border-radius:calc(var(--r) - 4px)">' : '<span style="width:40px;height:40px;border-radius:calc(var(--r) - 4px);background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-weight:800">' + esc(nm.charAt(0).toUpperCase()) + '</span>';
+  var tile = '<div style="flex:1;min-width:0"><div style="aspect-ratio:4/5;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)"></div><div style="font-size:12px;margin-top:5px;font-weight:600">Product name</div><div style="font-size:12px;color:var(--acc);font-weight:700">' + m(2500000, SU.cur) + '</div></div>';
+  return '<div style="' + styleStr(tk) + ';background:var(--bg);color:var(--tx);font-family:var(--font);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:10px;align-items:center">' + logo + '<b style="font-size:17px;letter-spacing:-.02em">' + esc(nm) + '</b></div>' +
+    '<div style="color:var(--mut);font-size:13px">' + esc(SU.desc.trim() || 'Your products, your brand.') + '</div><div style="display:flex;gap:10px">' + tile + tile + '</div><div style="' + btn + ';border-radius:var(--rb);padding:11px;text-align:center;font-weight:700;font-size:14px">Add to order</div></div>';
+}
+function suPrevRefresh() {
+  var tk = ZTheme.build(SU.th, SU.cat), el = document.getElementById('su_prev'); if (el) el.innerHTML = suPreview(tk);
+  var w = document.getElementById('su_warn'); if (w) w.innerHTML = tk.notes.length ? tk.notes.map(function (n) { return '<div class="hint" style="margin:0;color:var(--gold)">• ' + esc(n) + '</div>'; }).join('') : '<div class="hint" style="margin:0">✓ Text and buttons are easy to read.</div>';
+  var hx = document.getElementById('su_hex'), co = document.getElementById('su_col'); if (hx && document.activeElement !== hx) hx.value = SU.th.primary; if (co) co.value = SU.th.primary;
+}
+function suLink() { return esc(location.host) + '/store/<b>' + esc(slugify(SU.slug || SU.name) || 'your-store') + '</b>'; }
+function suRow(label, value, step) { return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)"><div style="min-width:0"><div class="hint" style="margin:0">' + label + '</div><div style="overflow-wrap:anywhere">' + value + '</div></div><button class="link-btn" data-act="su-go" data-s="' + step + '">Edit</button></div>'; }
+function setup() {
+  if (!SU) suReset();
+  var n = SU.step, body = '';
+  if (n === 0) body =
+    '<div class="field"><label for="su_name">Business name *</label><input class="in" id="su_name" maxlength="60" placeholder="Maison Adé" value="' + esc(SU.name) + '"></div>' +
+    '<div class="field"><label for="su_slug">Store link</label><input class="in" id="su_slug" maxlength="40" autocapitalize="off" spellcheck="false" placeholder="maison-ade" value="' + esc(SU.slug) + '"><span class="hint" style="margin:0" id="su_linkhint">' + suLink() + '</span></div>' +
+    '<div class="field"><label for="su_cat">What do you sell?</label><select class="in" id="su_cat">' + opts(CATS, SU.cat) + '</select></div>' +
+    phoneField('su_wa', 'WhatsApp number for orders *', '', SU.cc, SU.no) +
+    '<div class="field"><label for="su_cur">Currency your prices are in</label><select class="in" id="su_cur">' + opts(CURS, SU.cur) + '</select><span class="hint" style="margin:0">Most Nigerian sellers choose Naira.</span></div>';
+  else if (n === 1) body =
+    '<div class="field"><label>Store logo (optional)</label><div style="display:flex;gap:12px;align-items:center"><span>' + (SU.logo ? '<img alt="" src="' + esc(SU.logo.url) + '" style="width:56px;height:56px;border-radius:14px;object-fit:cover;display:block">' : '<span style="width:56px;height:56px;border-radius:14px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font-weight:800">' + esc((SU.name.trim() || 'S').charAt(0).toUpperCase()) + '</span>') + '</span>' +
+    '<div style="flex:1"><label class="btn btn-block" for="su_logo" style="cursor:pointer">' + (SU.logo ? 'Change logo' : 'Upload logo') + '</label><input id="su_logo" type="file" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"></div></div><span class="hint" style="margin:0">No logo? We show your name in a clean style.</span></div>' +
+    '<div class="field"><label for="su_desc">About your business</label><textarea class="in" id="su_desc" maxlength="500" placeholder="Elegant everyday wear, made in Lagos.">' + esc(SU.desc) + '</textarea></div>' +
+    '<div class="field"><label for="su_ig">Instagram (optional)</label><input class="in" id="su_ig" maxlength="31" autocapitalize="off" spellcheck="false" placeholder="yourhandle" value="' + esc(SU.ig) + '"></div>' +
+    '<div class="field"><label for="su_addr">Area or address (optional)</label><input class="in" id="su_addr" maxlength="200" placeholder="Lekki, Lagos" value="' + esc(SU.addr) + '"></div>';
+  else if (n === 2) body =
+    '<div id="su_prev">' + suPreview(ZTheme.build(SU.th, SU.cat)) + '</div>' +
+    '<div class="field"><label>Quick look</label><div class="chiprow">' + ZTheme.PRESETS.map(function (p) { return '<button class="chip" data-act="su-preset" data-v="' + p.id + '" aria-pressed="' + (SU.th.preset === p.id) + '"><span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:' + p.primary + ';margin-right:6px"></span>' + p.name + '</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><label for="su_hex">Main colour</label><div style="display:grid;grid-template-columns:56px 1fr;gap:8px"><input class="in" id="su_col" type="color" value="' + SU.th.primary + '" style="padding:4px;height:46px"><input class="in" id="su_hex" maxlength="7" autocapitalize="off" spellcheck="false" value="' + SU.th.primary + '"></div><span class="hint" style="margin:0">Pick one colour. The rest is built for you.</span></div>' +
+    '<div class="field"><label>Mode</label><div class="seg"><button type="button" data-act="su-mode" data-v="dark" aria-pressed="' + (SU.th.mode === 'dark') + '">Dark</button><button type="button" data-act="su-mode" data-v="light" aria-pressed="' + (SU.th.mode === 'light') + '">Light</button></div></div><div id="su_warn"></div>';
+  else {
+    var catL = (CATS.filter(function (c) { return c[0] === SU.cat; })[0] || [0, ''])[1], curL = (CURS.filter(function (c) { return c[0] === SU.cur; })[0] || [0, SU.cur])[1];
+    body = '<div id="su_prev">' + suPreview(ZTheme.build(SU.th, SU.cat)) + '</div><div>' + suRow('Business', esc(SU.name.trim()), 0) + suRow('Store link', suLink(), 0) + suRow('Category', esc(catL), 0) + suRow('WhatsApp for orders', '+' + esc(SU.cc) + ' ' + esc(SU.no.replace(/^0+/, '')), 0) + suRow('Currency', esc(curL), 0) +
+      suRow('About', esc(SU.desc.trim() || 'Not added'), 1) + suRow('Instagram', esc(SU.ig ? '@' + SU.ig : 'Not added'), 1) + suRow('Area', esc(SU.addr.trim() || 'Not added'), 1) + suRow('Look', esc(SU.th.preset ? (ZTheme.PRESETS.filter(function (p) { return p.id === SU.th.preset; })[0] || {}).name : 'Custom colour') + ', ' + SU.th.mode, 2) + '</div>' +
+      '<p class="hint" style="margin:0">Your store stays private until you add a product and tap Publish.</p>';
+  }
+  var nav = '<div class="btn-row" style="margin-top:14px">' + (n ? '<button class="btn btn-grow" data-act="su-back">Back</button>' : '') + '<button class="btn btn-gold btn-grow" data-act="' + (n === 3 ? 'su-create' : 'su-next') + '">' + (n === 3 ? 'Create store' : 'Next') + '</button></div>';
+  setTimeout(function () { if (SU && SU.step === 2) suPrevRefresh(); }, 0);
+  return '<div class="screen">' + H.bar('Set up your store', { back: false }) + suStepper(n) + '<div class="card" style="display:flex;flex-direction:column;gap:12px">' + body + '<div class="err" id="s_err" role="alert"></div></div>' + nav +
+    (n === 0 ? '<p class="hint" style="text-align:center;margin-top:14px">Only need invoices? <button class="link-btn" data-act="go" data-to="#/billing">Open invoices</button></p>' : '') + '</div>' + H.navHTML('home');
+}
+function suSync(e) {
+  var t = e.target, i = t && t.id; if (!SU || !i || i.indexOf('su_') !== 0) return;
+  var map = { su_name: 'name', su_slug: 'slug', su_cat: 'cat', su_wa_cc: 'cc', su_wa_no: 'no', su_cur: 'cur', su_desc: 'desc', su_ig: 'ig', su_addr: 'addr' };
+  if (map[i]) {
+    SU[map[i]] = t.value;
+    if (i === 'su_cat' && !SU.thTouched) SU.th = Object.assign(ZTheme.defaults(SU.cat), { preset: '' });
+    if (i === 'su_name' || i === 'su_slug') { var lh = document.getElementById('su_linkhint'); if (lh) lh.innerHTML = suLink(); }
+  }
+  if (i === 'su_col') { SU.th.primary = t.value.toLowerCase(); SU.th.preset = ''; SU.thTouched = true; suPrevRefresh(); }
+  if (i === 'su_hex') { var v = t.value.trim(); if (v.charAt(0) !== '#') v = '#' + v; if (/^#[0-9a-fA-F]{6}$/.test(v)) { SU.th.primary = v.toLowerCase(); SU.th.preset = ''; SU.thTouched = true; suPrevRefresh(); } }
+  if (i === 'su_logo' && e.type === 'change') {
+    var f = t.files && t.files[0]; t.value = ''; if (!f) return; perr('s_err', '');
+    prepImage(f, 512).then(function (p) { if (SU.logo) { try { URL.revokeObjectURL(SU.logo.url); } catch (x) { } } SU.logo = p; rerender(); }).catch(function (er) { perr('s_err', er.message); });
+  }
+}
+document.addEventListener('input', suSync); document.addEventListener('change', suSync);
+ACT['su-preset'] = function (t) { var p = ZTheme.PRESETS.filter(function (x) { return x.id === t.dataset.v; })[0]; if (!p) return; SU.th = { preset: p.id, primary: p.primary, mode: p.mode, font: p.font, radius: p.radius, button: p.button }; SU.thTouched = true; rerender(); };
+ACT['su-mode'] = function (t) { SU.th.mode = t.dataset.v; SU.th.preset = ''; SU.thTouched = true; rerender(); };
+ACT['su-back'] = function () { if (SU && SU.step > 0) { SU.step--; rerender(); window.scrollTo(0, 0); } };
+ACT['su-go'] = function (t) { SU.step = parseInt(t.dataset.s, 10) || 0; rerender(); window.scrollTo(0, 0); };
+ACT['su-next'] = async function (t) {
+  perr('s_err', ''); var n = SU.step;
+  if (n === 0) {
+    var name = SU.name.trim(); if (name.length < 2) return perr('s_err', 'Enter your business name');
+    var slug = slugify(SU.slug || name); if (slug.length < 3) return perr('s_err', 'Your store link needs at least 3 letters or numbers');
+    if (!getPhone('su_wa')) return perr('s_err', 'Enter a valid WhatsApp number');
+    t.disabled = true;
+    try { var ok = await sb().rpc('store_slug_available', { p_slug: slug }); if (ok.error) throw ok.error; if (!ok.data) { t.disabled = false; return perr('s_err', 'That store link is taken or not allowed. Try another.'); } }
+    catch (e) { t.disabled = false; return perr('s_err', Z.errMsg(e)); }
+    SU.slug = slug; SU.no = SU.no.replace(/\D/g, '').replace(/^0+/, '');
+  }
+  if (n === 1) {
+    var ig = SU.ig.trim().replace(/^@/, ''); if (ig && !/^[A-Za-z0-9._]{1,30}$/.test(ig)) return perr('s_err', 'Instagram handles use only letters, numbers, dots and underscores');
+    SU.ig = ig;
+  }
+  SU.step = n + 1; rerender(); window.scrollTo(0, 0);
+};
+ACT['su-create'] = async function (t) {
+  t.disabled = true; perr('s_err', '');
+  var wa = SU.cc + String(SU.no).replace(/\D/g, '').replace(/^0+/, '');
+  try {
+    var c = sb(), th = { primary: SU.th.primary, mode: SU.th.mode, font: SU.th.font, radius: SU.th.radius, button: SU.th.button }; if (SU.th.preset) th.preset = SU.th.preset;
+    var ok = await c.rpc('store_slug_available', { p_slug: SU.slug }); if (ok.error) throw ok.error; if (!ok.data) throw new Error('That store link was just taken. Tap Edit next to Store link and choose another.');
+    var row = { owner_id: S.user.id, name: SU.name.trim(), slug: SU.slug, category: SU.cat, whatsapp: wa, currency: SU.cur, theme: th };
+    if (SU.desc.trim()) row.description = SU.desc.trim(); if (SU.ig) row.instagram = SU.ig; if (SU.addr.trim()) row.address = SU.addr.trim();
+    var r = await c.from('stores').insert(row).select('id').single(); if (r.error) throw r.error;
+    if (SU.logo) { try { await putLogoPrepared(SU.logo, r.data.id, null); } catch (e2) { toast('Store created, but the logo could not upload. Add it in Theme Studio.', true); } }
+    if (SU.logo) { try { URL.revokeObjectURL(SU.logo.url); } catch (x) { } }
+    SU = null; ST.loaded = false; await load(true); toast('Your store is ready. Add your first product.'); location.hash = '#/products';
+  } catch (e) { t.disabled = false; perr('s_err', Z.errMsg(e)); }
+};
 
 function prodCard(p) {
   var im = (p.store_product_images || []).slice().sort(function (a, b) { return a.sort_order - b.sort_order; })[0];
@@ -117,44 +214,98 @@ document.addEventListener('input', function (e) { if (e.target && e.target.id ==
 ACT['st-sec'] = function (t) { ST.sec = t.dataset.s; rerender(); };
 ACT['st-unpublish'] = async function () { try { var r = await sb().from('stores').update({ status: 'draft' }).eq('id', ST.store.id); if (r.error) throw r.error; await load(true); toast('Your store is offline'); } catch (e) { toast(Z.errMsg(e), true); } };
 
+var PH = [], EDIT = null;
+function photoBox() {
+  var ex = ((EDIT && EDIT.store_product_images) || []).slice().sort(function (a, b) { return a.sort_order - b.sort_order; }), n = ex.length + PH.length;
+  var cell = 'width:76px;height:76px;border-radius:10px;object-fit:cover;background:var(--surface2);display:block';
+  var x = 'position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:99px;border:0;background:#c33;color:#fff;font-size:14px;line-height:1';
+  var cells = ex.map(function (i) { return '<span style="position:relative"><img alt="" style="' + cell + '" src="' + esc(img(i.path)) + '"><button type="button" aria-label="Remove photo" data-act="st-delimg" data-id="' + esc(i.id) + '" data-path="' + esc(i.path) + '" style="' + x + '">×</button></span>'; }).join('') +
+    PH.map(function (p, k) { return '<span style="position:relative"><img alt="" style="' + cell + '" src="' + esc(p.url) + '"><button type="button" aria-label="Remove photo" data-act="st-pend-rm" data-i="' + k + '" style="' + x + '">×</button></span>'; }).join('');
+  var add = n < 6 ? '<label for="p_files" style="width:76px;height:76px;border:1.5px dashed var(--line);border-radius:10px;display:grid;place-items:center;text-align:center;font-size:12px;line-height:1.3;color:var(--gold);cursor:pointer;font-weight:600">+<br>Add photos</label>' : '';
+  return '<div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:6px">' + cells + add + '</div><span class="hint" style="margin:6px 0 0;display:block">' + n + ' of 6 photos. The first one is the cover.</span>';
+}
+function photoRefresh() { var e = document.getElementById('p_photos'); if (e) e.innerHTML = photoBox(); }
+function photosReset() { PH.forEach(function (p) { try { URL.revokeObjectURL(p.url); } catch (e) { } }); PH = []; }
 function prodForm(p) {
-  p = p || {}; var imgs = (p.store_product_images || []).map(function (i) { return '<span style="position:relative"><img alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px" src="' + esc(img(i.path)) + '"><button type="button" data-act="st-delimg" data-id="' + esc(i.id) + '" data-path="' + esc(i.path) + '" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:99px;border:0;background:#c33;color:#fff">×</button></span>'; }).join('');
-  return '<div style="display:flex;flex-direction:column;gap:12px"><div class="field"><label for="p_name">Name *</label><input class="in" id="p_name" maxlength="120" value="' + esc(p.name || '') + '"></div>' +
+  p = p || {};
+  return '<div style="display:flex;flex-direction:column;gap:12px">' +
+    '<div class="field"><label>Photos</label><div id="p_photos">' + photoBox() + '</div><input id="p_files" type="file" accept="image/*" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"></div>' +
+    '<div class="field"><label for="p_name">Name *</label><input class="in" id="p_name" maxlength="120" value="' + esc(p.name || '') + '"></div>' +
     '<div class="field"><label for="p_price">Price (' + esc(ST.store.currency) + ') *</label><input class="in" id="p_price" type="number" inputmode="decimal" min="0" step="0.01" value="' + (p.price_minor != null ? p.price_minor / 100 : '') + '"></div>' +
-    '<div class="field"><label for="p_desc">Description</label><textarea class="in" id="p_desc" maxlength="1000">' + esc(p.description || '') + '</textarea></div>' +
     '<div class="field"><label for="p_cat">Section (e.g. Dresses, Bags)</label><input class="in" id="p_cat" maxlength="40" list="p_cats" value="' + esc(p.category || '') + '"><datalist id="p_cats">' + sections().map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div class="field"><label for="p_desc">Description</label><textarea class="in" id="p_desc" maxlength="1000">' + esc(p.description || '') + '</textarea></div>' +
     '<div class="two"><div class="field"><label for="p_stock">Availability</label><select class="in" id="p_stock">' + opts([['in_stock', 'In stock'], ['out_of_stock', 'Out of stock'], ['made_to_order', 'Made to order']], p.stock_status || 'in_stock') + '</select></div>' +
     '<div class="field"><label for="p_status">Visibility</label><select class="in" id="p_status">' + opts([['published', 'Shown'], ['draft', 'Hidden']], p.status || 'published') + '</select></div></div>' +
-    (imgs ? '<div style="display:flex;gap:8px;flex-wrap:wrap">' + imgs + '</div>' : '') +
-    '<div class="field"><label for="p_files">Photos (up to 6)</label><input class="in" id="p_files" type="file" accept="image/*" multiple></div>' +
     '<div class="err" id="p_err" role="alert"></div><div class="btn-row"><button class="btn btn-gold btn-grow" data-act="st-save" data-id="' + esc(p.id || '') + '">Save product</button>' + (p.id ? '<button class="btn btn-danger" data-act="st-del" data-id="' + esc(p.id) + '">Remove</button>' : '') + '</div></div>';
 }
-function toWebp(file, max) {
-  return new Promise(function (res, rej) {
-    var im = new Image(), u = URL.createObjectURL(file);
-    im.onload = function () { var r = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * r); c.height = Math.round(im.height * r); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); c.toBlob(function (b) { b ? res(b) : rej(new Error('Image failed')); }, 'image/webp', 0.8); };
-    im.onerror = function () { rej(new Error('That file is not a valid image')); }; im.src = u;
-  });
+
+/* ---- photo processing: tolerant of big phone photos and odd formats ---- */
+function toBlob(c, type, q) { return new Promise(function (res) { try { c.toBlob(function (b) { res(b); }, type, q); } catch (e) { res(null); } }); }
+function loadImg(src) { return new Promise(function (res, rej) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { rej(new Error('decode')); }; im.src = src; }); }
+function readDataURL(file) { return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = function () { rej(new Error('read')); }; fr.readAsDataURL(file); }); }
+async function decodeImage(file) {
+  if (window.createImageBitmap) {
+    try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch (e1) { }
+    try { return await createImageBitmap(file); } catch (e2) { }
+  }
+  var u = URL.createObjectURL(file);
+  try { return await loadImg(u); } catch (e3) { } finally { URL.revokeObjectURL(u); }
+  try { return await loadImg(await readDataURL(file)); } catch (e4) { }
+  if (window.createImageBitmap) { try { return await createImageBitmap(file, { resizeWidth: 1600, resizeQuality: 'medium' }); } catch (e5) { } }
+  throw new Error('decode');
 }
+async function prepImage(file, max) {
+  if (!file || !file.size) throw new Error('That photo is empty. If it is in Google Photos, download it to your phone first.');
+  var src;
+  try { src = await decodeImage(file); } catch (e) {
+    if (/hei[cf]/i.test((file.type || '') + ' ' + (file.name || ''))) throw new Error('HEIC photos are not supported. Pick a JPG or PNG, or set your camera to JPG.');
+    throw new Error('This photo could not be read. Try another photo, or take a screenshot of it and add that.');
+  }
+  var w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  if (!w || !h) throw new Error('This photo could not be read. Try another photo.');
+  var s = Math.min(1, max / Math.max(w, h)), q = 0.8, b = null;
+  for (var i = 0; i < 5; i++) {
+    var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+    var ctx = c.getContext('2d'); ctx.drawImage(src, 0, 0, c.width, c.height);
+    b = await toBlob(c, 'image/webp', q);
+    if (!b || b.type !== 'image/webp') { ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); b = await toBlob(c, 'image/jpeg', q); }
+    if (b && b.size <= 900000) break;
+    s *= 0.8; q = Math.max(0.5, q - 0.1);
+  }
+  if (src.close) { try { src.close(); } catch (e) { } }
+  if (!b || b.size > 1000000) throw new Error('This photo is too large to process. Try a smaller one.');
+  return { blob: b, type: b.type, ext: b.type === 'image/webp' ? 'webp' : 'jpg', url: URL.createObjectURL(b) };
+}
+async function putLogoPrepared(p, storeId, old) {
+  var path = storeId + '/logo-' + Date.now() + '.' + p.ext, c = sb();
+  var up = await c.storage.from('store-media').upload(path, p.blob, { contentType: p.type }); if (up.error) throw up.error;
+  var r = await c.from('stores').update({ logo_path: path }).eq('id', storeId);
+  if (r.error) { try { await c.storage.from('store-media').remove([path]); } catch (e) { } throw r.error; }
+  if (old) { try { await c.storage.from('store-media').remove([old]); } catch (e) { } }
+}
+async function putLogo(file, storeId, old) { var p = await prepImage(file, 512); try { await putLogoPrepared(p, storeId, old); } finally { URL.revokeObjectURL(p.url); } }
+document.addEventListener('change', async function (e) {
+  var t = e.target; if (!t || t.id !== 'p_files') return;
+  var files = Array.prototype.slice.call(t.files || []), errs = []; t.value = '';
+  var room = Math.max(0, 6 - ((EDIT && EDIT.store_product_images) || []).length - PH.length);
+  if (files.length > room) { errs.push(room ? 'Only ' + room + ' more photo' + (room > 1 ? 's' : '') + ' fit, so the rest were skipped.' : 'A product can have up to 6 photos.'); files = files.slice(0, room); }
+  perr('p_err', ''); var sv = document.querySelector('[data-act="st-save"]'); if (sv) sv.disabled = true;
+  for (var i = 0; i < files.length; i++) {
+    try { var p = await prepImage(files[i], 1280); p.name = files[i].name; PH.push(p); } catch (er) { errs.push((files[i].name ? files[i].name + ': ' : '') + er.message); }
+    photoRefresh();
+  }
+  sv = document.querySelector('[data-act="st-save"]'); if (sv) sv.disabled = false;
+  if (errs.length) perr('p_err', errs.join(' '));
+});
 function perr(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
 function sections() { var o = {}; ST.prods.forEach(function (p) { if (p.category) o[p.category] = 1; }); return Object.keys(o); }
 function byId(id) { return ST.prods.filter(function (p) { return p.id === id; })[0]; }
 
 ACT['st-reload'] = function () { ST.loaded = false; load(); };
-ACT['st-new'] = function () { Z.openSheet('New product', prodForm()); };
-ACT['st-edit'] = function (t) { var p = byId(t.dataset.id); if (p) Z.openSheet('Edit product', prodForm(p)); };
 ACT['st-share'] = function () { window.open('https://wa.me/?text=' + encodeURIComponent('Shop ' + ST.store.name + ' here: ' + link(ST.store)), '_blank'); };
-ACT['st-create'] = async function (t) {
-  var name = val('s_name'), slug = slugify(val('s_slug') || name), wa = getPhone('s_wa');
-  if (name.length < 2) return perr('s_err', 'Enter your store name'); if (!wa) return perr('s_err', 'Enter a valid WhatsApp number');
-  t.disabled = true; perr('s_err', '');
-  try {
-    var c = sb(), ok = await c.rpc('store_slug_available', { p_slug: slug }); if (!ok.data) throw new Error('That store link is taken or not allowed. Try another.');
-    var r = await c.from('stores').insert({ owner_id: S.user.id, name: name, slug: slug, category: val('s_cat'), whatsapp: wa, currency: val('s_cur') }).select('id').single(); if (r.error) throw r.error;
-    var lf = document.getElementById('s_logo').files[0]; if (lf) { try { await putLogo(lf, r.data.id, null); } catch (e2) { toast('Store created, but the logo could not upload. Add it in settings.', true); } }
-    ST.loaded = false; await load(true); toast('Store created. Add your first product.');
-  } catch (e) { t.disabled = false; perr('s_err', Z.errMsg(e)); }
-};
+ACT['st-new'] = function () { photosReset(); EDIT = { store_product_images: [] }; Z.openSheet('New product', prodForm()); };
+ACT['st-edit'] = function (t) { var p = byId(t.dataset.id); if (!p) return; photosReset(); EDIT = Object.assign({}, p, { store_product_images: (p.store_product_images || []).slice() }); Z.openSheet('Edit product', prodForm(EDIT)); };
+ACT['st-pend-rm'] = function (t) { var p = PH.splice(parseInt(t.dataset.i, 10), 1)[0]; if (p) { try { URL.revokeObjectURL(p.url); } catch (e) { } } photoRefresh(); };
 ACT['st-save'] = async function (t) {
   var id = t.dataset.id, name = val('p_name'), price = parseFloat(val('p_price'));
   if (!name) return perr('p_err', 'Enter a product name'); if (!(price >= 0)) return perr('p_err', 'Enter a valid price');
@@ -162,17 +313,26 @@ ACT['st-save'] = async function (t) {
   try {
     var c = sb(), row = { name: name, description: val('p_desc'), category: val('p_cat') || null, price_minor: Math.round(price * 100), stock_status: val('p_stock'), status: val('p_status') }, pid = id;
     if (id) { var u = await c.from('store_products').update(row).eq('id', id); if (u.error) throw u.error; }
-    else { row.store_id = ST.store.id; row.slug = slugify(name) + '-' + Math.random().toString(36).slice(2, 6); var n = await c.from('store_products').insert(row).select('id').single(); if (n.error) throw n.error; pid = n.data.id; }
-    var files = Array.prototype.slice.call(document.getElementById('p_files').files, 0, 6), pos = id ? (byId(id).store_product_images || []).length : 0;
-    for (var i = 0; i < files.length; i++) {
-      var blob = await toWebp(files[i], 1280), path = ST.store.id + '/' + pid + '/' + Date.now() + '-' + pos + '.webp';
-      var up = await c.storage.from('store-media').upload(path, blob, { contentType: 'image/webp' }); if (up.error) throw up.error;
-      var ins = await c.from('store_product_images').insert({ product_id: pid, store_id: ST.store.id, path: path, sort_order: pos++ }); if (ins.error) throw ins.error;
+    else { row.store_id = ST.store.id; row.slug = slugify(name) + '-' + Math.random().toString(36).slice(2, 6); var n = await c.from('store_products').insert(row).select('id').single(); if (n.error) throw n.error; pid = n.data.id; t.dataset.id = pid; EDIT.id = pid; }
+    var pos = (EDIT.store_product_images || []).length;
+    while (PH.length) {
+      var ph = PH[0], path = ST.store.id + '/' + pid + '/' + Date.now() + '-' + pos + '.' + ph.ext;
+      var up = await c.storage.from('store-media').upload(path, ph.blob, { contentType: ph.type }); if (up.error) throw up.error;
+      var ins = await c.from('store_product_images').insert({ product_id: pid, store_id: ST.store.id, path: path, sort_order: pos }).select('id,path,sort_order').single();
+      if (ins.error) { try { await c.storage.from('store-media').remove([path]); } catch (e) { } throw ins.error; }
+      EDIT.store_product_images.push(ins.data); PH.shift(); pos++; try { URL.revokeObjectURL(ph.url); } catch (e) { }
     }
     Z.closeSheet(); await load(true); toast('Product saved');
-  } catch (e) { t.disabled = false; t.textContent = 'Save product'; perr('p_err', Z.errMsg(e)); }
+  } catch (e) { t.disabled = false; t.textContent = 'Save product'; photoRefresh(); perr('p_err', 'Could not save everything: ' + Z.errMsg(e) + ' Tap Save again to retry.'); }
 };
-ACT['st-delimg'] = async function (t) { try { var c = sb(); await c.storage.from('store-media').remove([t.dataset.path]); await c.from('store_product_images').delete().eq('id', t.dataset.id); Z.closeSheet(); await load(true); toast('Photo removed'); } catch (e) { toast(Z.errMsg(e), true); } };
+ACT['st-delimg'] = async function (t) {
+  try {
+    var c = sb(); var r = await c.from('store_product_images').delete().eq('id', t.dataset.id); if (r.error) throw r.error;
+    try { await c.storage.from('store-media').remove([t.dataset.path]); } catch (e) { }
+    if (EDIT) EDIT.store_product_images = (EDIT.store_product_images || []).filter(function (i) { return i.id !== t.dataset.id; });
+    photoRefresh(); load(true); toast('Photo removed');
+  } catch (e) { toast(Z.errMsg(e), true); }
+};
 ACT['st-del'] = async function (t) { try { var r = await sb().from('store_products').update({ status: 'archived' }).eq('id', t.dataset.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Product removed'); } catch (e) { toast(Z.errMsg(e), true); } };
 ACT['st-ord'] = async function (t) { try { var r = await sb().rpc('set_store_order_status', { p_order: t.dataset.id, p_status: t.dataset.s }); if (r.error) throw r.error; await load(true); toast('Order updated'); } catch (e) { toast(Z.errMsg(e), true); } };
 ACT['st-publish'] = async function () { try { var r = await sb().from('stores').update({ status: 'published' }).eq('id', ST.store.id); if (r.error) throw r.error; await load(true); toast('Your store is live'); } catch (e) { toast(Z.errMsg(e), true); } };
@@ -253,5 +413,5 @@ document.addEventListener('input', function (e) {
   if (i === 'ts_logo' && e.target.files[0]) { var f = e.target.files[0], u = URL.createObjectURL(f); ST.store._previewLogo = u; }
 });
 
-Z.storeReset = function () { TS = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
+Z.storeReset = function () { TS = null; SU = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
 })();
