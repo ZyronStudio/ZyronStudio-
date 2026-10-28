@@ -283,6 +283,7 @@ SCR.more = function () {
     m('user', 'Invoice & account settings', 'Bank details, invoice defaults, notifications', '#/settings') +
     m('card', 'Plan & billing', 'Trial status and pricing', '#/plan') +
     m('spark', 'Video tutorial', 'Watch how Zyron Studio works', '', 'st-video') +
+    m('chat', 'Give feedback', 'Tell us how Zyron Studio is working for you', '', 'fb-open') +
     m('help', 'Help & FAQ', 'Tutorial, answers and support', '#/help') +
     m('share', 'Invite a friend', 'Share Zyron Studio on WhatsApp', null, 'invite') +
     m('phone', 'Install the app', 'Add Zyron Studio to your home screen', null, 'install') +

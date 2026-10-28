@@ -542,4 +542,20 @@ async function pollOrders() {
 }
 setInterval(pollOrders, 45000);
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') pollOrders(); });
+
+/* ---- feedback: stored in the database, emailed by the server ---- */
+var FB = { r: 0 };
+function fbStars() { var h = ''; for (var i = 1; i <= 5; i++) h += '<button type="button" data-act="fb-star" data-v="' + i + '" aria-label="' + i + ' star' + (i > 1 ? 's' : '') + '" style="background:none;border:0;font-size:34px;line-height:1;padding:4px;color:' + (i <= FB.r ? 'var(--gold-a)' : 'var(--line)') + '">★</button>'; return h; }
+ACT['fb-open'] = function () { FB.r = 0; Z.openSheet('Give feedback', '<p style="margin:0;color:var(--muted)">How is Zyron Studio working for you? Your message goes straight to the team.</p><div id="fb_stars" style="display:flex;justify-content:center">' + fbStars() + '</div><div class="field"><label for="fb_msg">What should we improve? (optional)</label><textarea class="in" id="fb_msg" maxlength="1000" placeholder="Tell us anything: what you like, what confused you, what is missing"></textarea></div><div class="err" id="fb_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="fb-send">Send feedback</button>'); };
+ACT['fb-star'] = function (t) { FB.r = parseInt(t.dataset.v, 10); var e = document.getElementById('fb_stars'); if (e) e.innerHTML = fbStars(); };
+ACT['fb-send'] = async function (t) {
+  if (t.disabled) return; if (!FB.r) return perr('fb_err', 'Tap a star to rate us first.'); perr('fb_err', '');
+  t.disabled = true; t.textContent = 'Sending…';
+  try {
+    var r = await sb().functions.invoke('submit-feedback', { body: { rating: FB.r, message: val('fb_msg') } });
+    if (r.error) { var m2 = ''; try { var j = await r.error.context.json(); m2 = j.error; } catch (e) { } throw new Error(m2 || 'Could not send. Check your connection and try again.'); }
+    if (!r.data || !r.data.ok) throw new Error((r.data && r.data.error) || 'Could not send.');
+    Z.closeSheet(); toast('Thank you! Your feedback was sent');
+  } catch (e) { t.disabled = false; t.textContent = 'Send feedback'; perr('fb_err', e.message); }
+};
 })();
