@@ -330,7 +330,19 @@ function byId(id) { return ST.prods.filter(function (p) { return p.id === id; })
 
 ACT['st-reload'] = function () { ST.loaded = false; load(); };
 function vidCard() { return '<button class="card" data-act="st-video" style="width:100%;text-align:left;display:flex;gap:12px;align-items:center;margin-top:0;border-color:var(--gold)"><span style="width:44px;height:44px;border-radius:99px;background:var(--gold);color:#000;display:grid;place-items:center;font-size:18px;flex:none">▶</span><span><b>Watch the video tutorial</b><span class="hint" style="display:block;margin:2px 0 0">45 seconds: set up, add products, share your link</span></span></button>'; }
-ACT['st-video'] = function () { Z.openSheet('Video tutorial', '<video controls playsinline preload="metadata" poster="/tutorial-poster.jpg" style="width:100%;max-height:68vh;border-radius:12px;background:#000"><source src="/tutorial.mp4" type="video/mp4"></video><span class="hint">Tap play. You can open this again any time from Home.</span>'); try { localStorage.setItem('zs_vid', '1'); } catch (e) { } };
+var VCUES = [[2.3, 'Welcome to Zyron Studio. Let us set up your store. First, type your store name and your WhatsApp number.'], [7.9, 'Next, tell your customers a little about your business.'], [12.5, 'Now pick a look. Choose a colour, add your logo, and choose a style.'], [15.7, 'Check everything, then create your store.'], [20.6, 'Your store is ready. Now let us add your products.'], [24.3, 'Add photos, a name and a price. The section and description fill in for you.'], [33.7, 'Go to Home, publish your store, then copy or share your link.'], [36.7, 'When customers order, you get an alert in Orders.'], [39.8, 'Need an invoice? Open More, then Invoices. That is all. Enjoy Zyron Studio.']];
+var VOICE = { on: true, i: -1 };
+function vSpeak(t) { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(t), vs = speechSynthesis.getVoices(), v = vs.filter(function (x) { return /en[-_](NG|GB)/i.test(x.lang); })[0] || vs.filter(function (x) { return /^en/i.test(x.lang); })[0]; if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.rate = 0.97; speechSynthesis.speak(u); } catch (e) { } }
+ACT['st-video'] = function () {
+  var ok = 'speechSynthesis' in window; VOICE.i = -1;
+  Z.openSheet('Video tutorial', '<video id="vt" controls playsinline preload="metadata" poster="/tutorial-poster.jpg" style="width:100%;max-height:62vh;border-radius:12px;background:#000"><source src="/tutorial.mp4" type="video/mp4"></video>' + (ok ? '<label style="display:flex;gap:10px;align-items:center;margin-top:10px"><input type="checkbox" id="vt_voice" checked style="width:20px;height:20px"> <span>Voice guide on</span></label>' : '') + '<span class="hint">Tap play. Turn your volume up for the voice. You can open this again from Home.</span>');
+  var v = document.getElementById('vt'); if (!v) return;
+  v.addEventListener('timeupdate', function () { var k = -1; VCUES.forEach(function (c, n) { if (v.currentTime >= c[0]) k = n; }); if (k !== VOICE.i && !v.paused) { VOICE.i = k; var cb = document.getElementById('vt_voice'); if (k >= 0 && ok && (!cb || cb.checked)) vSpeak(VCUES[k][1]); } });
+  v.addEventListener('pause', function () { try { speechSynthesis.cancel(); } catch (e) { } });
+  v.addEventListener('seeked', function () { VOICE.i = -1; });
+  v.addEventListener('ended', function () { VOICE.i = -1; });
+  try { localStorage.setItem('zs_vid', '1'); } catch (e) { }
+};
 ACT['st-copy'] = function () { var u = link(ST.store); function ok() { toast('Link copied'); } function fb() { var i = document.createElement('input'); i.value = u; document.body.appendChild(i); i.select(); try { document.execCommand('copy'); ok(); } catch (e) { toast(u); } i.remove(); } if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(ok, fb); else fb(); };
 ACT['st-share'] = function () { window.open('https://wa.me/?text=' + encodeURIComponent('Shop ' + ST.store.name + ' here: ' + link(ST.store)), '_blank'); };
 ACT['st-new'] = function () { photosReset(); EDIT = { store_product_images: [] }; Z.openSheet('New product', prodForm()); };
