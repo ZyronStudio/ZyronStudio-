@@ -367,8 +367,9 @@ document.addEventListener('input', function (e) {
   if (d && (!d.value || d.dataset.auto) && !d.dataset.off && t.value.trim().length > 2) { d.value = guessDesc(t.value, c ? c.value : '', 0); d.dataset.auto = '1'; }
 });
 ACT['st-save'] = async function (t) {
+  if (t.disabled || t.dataset.busy) return; t.dataset.busy = '1';
   var id = t.dataset.id, name = val('p_name'), price = Z.num(val('p_price'));
-  if (!name) return perr('p_err', 'Enter a product name'); if (!(price >= 0)) return perr('p_err', 'Enter a valid price');
+  if (!name) { delete t.dataset.busy; return perr('p_err', 'Enter a product name'); } if (!(price >= 0) || price > 1e9) { delete t.dataset.busy; return perr('p_err', 'Enter a valid price'); }
   t.disabled = true; t.textContent = 'Saving…'; perr('p_err', '');
   try {
     var c = sb(), row = { name: name, description: val('p_desc'), category: val('p_cat') || null, price_minor: Math.round(price * 100), stock_status: val('p_stock'), status: val('p_status') }, pid = id;
@@ -383,7 +384,7 @@ ACT['st-save'] = async function (t) {
       EDIT.store_product_images.push(ins.data); PH.shift(); pos++; try { URL.revokeObjectURL(ph.url); } catch (e) { }
     }
     Z.closeSheet(); await load(true); toast('Product saved');
-  } catch (e) { t.disabled = false; t.textContent = 'Save product'; photoRefresh(); perr('p_err', 'Could not save everything: ' + Z.errMsg(e) + ' Tap Save again to retry.'); }
+  } catch (e) { delete t.dataset.busy; t.disabled = false; t.textContent = 'Save product'; photoRefresh(); perr('p_err', 'Could not save everything: ' + Z.errMsg(e) + ' Tap Save again to retry.'); }
 };
 ACT['st-delimg'] = async function (t) {
   try {
@@ -393,9 +394,34 @@ ACT['st-delimg'] = async function (t) {
     photoRefresh(); load(true); toast('Photo removed');
   } catch (e) { toast(Z.errMsg(e), true); }
 };
-ACT['st-del'] = async function (t) { try { var r = await sb().from('store_products').update({ status: 'archived' }).eq('id', t.dataset.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Product removed'); } catch (e) { toast(Z.errMsg(e), true); } };
+ACT['st-del'] = function (t) { var p = byId(t.dataset.id); Z.openSheet('Remove this product?', '<p style="margin:0;color:var(--muted)">“' + esc(p ? p.name : 'This product') + '” will disappear from your store. Past orders keep their record.</p><div class="btn-row"><button class="btn btn-grow" data-act="sheet-close">Keep it</button><button class="btn btn-danger btn-grow" data-act="st-del-yes" data-id="' + esc(t.dataset.id) + '">Remove</button></div>'); };
+ACT['st-del-yes'] = async function (t) { if (t.disabled) return; t.disabled = true; try { var r = await sb().from('store_products').update({ status: 'archived' }).eq('id', t.dataset.id); if (r.error) throw r.error; Z.closeSheet(); await load(true); toast('Product removed'); } catch (e) { t.disabled = false; toast(Z.errMsg(e), true); } };
 ACT['st-ord'] = async function (t) { try { var r = await sb().rpc('set_store_order_status', { p_order: t.dataset.id, p_status: t.dataset.s }); if (r.error) throw r.error; await load(true); toast('Order updated'); } catch (e) { toast(Z.errMsg(e), true); } };
-ACT['st-publish'] = async function () { try { var r = await sb().from('stores').update({ status: 'published' }).eq('id', ST.store.id); if (r.error) throw r.error; await load(true); toast('Your store is live'); } catch (e) { toast(Z.errMsg(e), true); } };
+var PUBBUSY = false;
+function readiness() {
+  var st = ST.store, live = ST.prods.filter(function (p) { return p.status === 'published'; }), block = [], tips = [];
+  if (!st.name || st.name.trim().length < 2) block.push('Add your store name (Customise your store, then Edit store name).');
+  if (!st.whatsapp || !/^[0-9]{8,15}$/.test(String(st.whatsapp).replace(/\D/g, ''))) block.push('Add a valid WhatsApp number so customers can reach you.');
+  if (!live.length) block.push('Add at least one product and set it to Shown.');
+  live.forEach(function (p) { if (!(p.price_minor >= 0)) block.push('“' + p.name + '” needs a valid price.'); });
+  var nop = live.filter(function (p) { return !(p.store_product_images || []).length; }).length;
+  if (nop) tips.push(nop + ' product' + (nop > 1 ? 's have' : ' has') + ' no photo. Photos help sell.');
+  if (!st.logo_path) tips.push('Add your logo in Theme Studio so your store looks like your brand.');
+  if (!st.description) tips.push('Add a short “about” line so customers know who you are.');
+  return { block: block, tips: tips };
+}
+async function doPublish() {
+  if (PUBBUSY) return; PUBBUSY = true;
+  try { var r = await sb().from('stores').update({ status: 'published' }).eq('id', ST.store.id).select('status').single(); if (r.error) throw r.error; if (!r.data || r.data.status !== 'published') throw new Error('Publishing did not complete'); Z.closeSheet(); await load(true); toast('Your store is live'); }
+  catch (e) { toast('Could not publish: ' + Z.errMsg(e), true); } finally { PUBBUSY = false; }
+}
+ACT['st-publish'] = function () {
+  var rd = readiness(), li = function (x, c) { return '<div style="display:flex;gap:10px;align-items:flex-start"><span style="color:' + c + ';font-weight:700">' + (c === 'var(--ruby)' ? '✕' : '•') + '</span><span>' + esc(x) + '</span></div>'; };
+  if (rd.block.length) { Z.openSheet('Almost ready', '<p style="margin:0;color:var(--muted)">Fix these before you publish:</p>' + rd.block.map(function (x) { return li(x, 'var(--ruby)'); }).join('') + '<button class="btn btn-gold btn-block" data-act="sheet-close">Okay</button>'); return; }
+  if (rd.tips.length) { Z.openSheet('Ready to publish', '<p style="margin:0;color:var(--muted)">Nothing is blocking you. A few tips to make it better:</p>' + rd.tips.map(function (x) { return li(x, 'var(--gold)'); }).join('') + '<div class="btn-row"><button class="btn btn-grow" data-act="sheet-close">Fix first</button><button class="btn btn-gold btn-grow" data-act="st-publish-go">Publish now</button></div>'); return; }
+  doPublish();
+};
+ACT['st-publish-go'] = function () { doPublish(); };
 ACT['st-settings'] = function () {
   var s = ST.store; if (!s) { location.hash = '#/home'; return; }
   Z.openSheet('Store settings', '<div style="display:flex;flex-direction:column;gap:12px">' +
