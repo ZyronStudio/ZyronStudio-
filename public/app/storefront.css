@@ -1,6 +1,6 @@
 .st,.st *{box-sizing:border-box}
 body{margin:0;font-family:var(--font,Geist,system-ui,sans-serif);background:var(--bg,#05060a);color:var(--tx,#f3f1ea)}
-.st{max-width:1240px;margin:0 auto;padding:0 22px 130px;font-family:var(--font,Geist,system-ui,sans-serif);color:var(--tx);min-height:100vh}
+.st{max-width:1240px;margin:0 auto;padding:0 22px 150px;font-family:var(--font,Geist,system-ui,sans-serif);color:var(--tx);min-height:100vh}
 .mut{color:var(--mut)}.c{text-align:center;padding-top:20vh}
 .pvbanner{background:var(--acc);color:var(--onacc);padding:8px;text-align:center;font-weight:600;margin:0 -16px}
 .hero{padding:48px 0 20px}.hero h1{font-size:clamp(34px,8vw,64px);letter-spacing:-.04em;margin:0;line-height:1.02}.hero p{color:var(--mut);max-width:560px}
@@ -21,7 +21,7 @@ body{margin:0;font-family:var(--font,Geist,system-ui,sans-serif);background:var(
 .st input,.st textarea,.st select{background:var(--inset);border:1px solid var(--line);color:var(--tx);border-radius:calc(var(--rb) > 20px ? 14px : var(--rb));padding:12px;font:inherit;font-size:16px}
 .btn{background:var(--inset);color:var(--tx);border:1px solid var(--line);border-radius:var(--rb);padding:13px;font:inherit;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}
 .btn.gold{background:var(--acc);color:var(--onacc);border-color:var(--acc)}.btn:disabled{opacity:.5}
-.outline .btn.gold,.outline .bar{background:transparent;color:var(--acc);border:2px solid var(--acc)}
+.outline .btn.gold{background:transparent;color:var(--acc);border:2px solid var(--acc)}.outline .bar{background:var(--bg);color:var(--acc);border:2px solid var(--acc)}
 .err{color:#ff7b7b;margin:0}.ft{text-align:center;color:var(--mut);margin-top:60px;font-size:13px}.ft a{color:var(--mut)}
 .logo{width:72px;height:72px;border-radius:calc(var(--r) - 2px);object-fit:cover;margin-bottom:12px}.srch{width:100%;margin:0 0 10px}
 .secs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px}.secs button{background:var(--surface);color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:8px 16px;font:inherit;cursor:pointer;white-space:nowrap}.secs .on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
@@ -42,10 +42,11 @@ body{margin:0;font-family:var(--font,Geist,system-ui,sans-serif);background:var(
 .ph img{transition:transform .5s}.pc:hover .ph img{transform:scale(1.06)}
 .pc b{font-size:15px;margin-top:6px}.pc span{font-size:16px}
 .secs button{transition:all .2s}.secs button.on{box-shadow:0 8px 24px -10px var(--acc)}
-.btn.gold,.bar{position:relative;overflow:hidden}
+.btn.gold{position:relative;overflow:hidden}
 .btn.gold::after,.bar::after{content:"";position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shn 3.6s ease-in-out infinite;pointer-events:none}
 @keyframes shn{0%{transform:translateX(-120%) skewX(-18deg)}60%,100%{transform:translateX(260%) skewX(-18deg)}}
-.bar{animation:up .4s both;box-shadow:0 14px 40px -10px var(--acc)}
+.bar{position:fixed!important;overflow:hidden;animation:upbar .4s both;box-shadow:0 14px 40px -10px var(--acc)}
+@keyframes upbar{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 .ssheet{animation:up .35s both}
 .grid.list{grid-template-columns:1fr!important;gap:12px}
 .grid.list .pc{flex-direction:row;align-items:center;gap:16px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
