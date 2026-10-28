@@ -82,7 +82,7 @@ async function refresh() { try { await Z.loadAll(true); } catch (e) { toast(Z.er
 async function initEditor(r, key) {
   var p = S.profile, today = Z.lagosToday(), dd = Number(p.default_due_days);
   var e = { key: key, id: null, number: '', client_id: '', currency: p.default_currency || 'NGN', issue_date: today, items: [{ d: '', q: '1', p: '' }], disc: '', discMode: 'amt', vat: '0', vatCustom: false, termsKey: [0, 7, 14, 30].indexOf(dd) >= 0 ? String(dd) : 'custom', due_date: Z.addDaysISO(today, dd), notes: '', terms: p.default_terms || '', theme: p.default_theme || 'midnight_gold', mode: 'edit', saving: false };
-  if (r.n === 'new') { var c = qparam(r.q, 'client'); if (c && Z.clientById(c)) e.client_id = c; }
+  if (r.n === 'new') { var c = qparam(r.q, 'client'); if (c && Z.clientById(c)) e.client_id = c; if (window.ZPRE) { var pr = window.ZPRE; window.ZPRE = null; if (pr.items && pr.items.length) e.items = pr.items; if (pr.notes) e.notes = pr.notes; } }
   if (r.n === 'edit') {
     var inv = Z.invById(r.a);
     if (!inv || inv.status !== 'draft') { Z.setE(null); location.replace('#/inv/' + r.a); return; }

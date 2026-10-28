@@ -3,7 +3,7 @@
 'use strict';
 var Z = window.Z, S = Z.S, esc = Z.esc, ic = Z.ic, SCR = Z.SCR, H = Z.helpers, toast = Z.toast, ACT = window.ZA.ACT;
 var SB_URL = 'https://tnjgkxdjejjvujtteyfx.supabase.co';
-var CATS = [['fashion', 'Fashion'], ['shoes_accessories', 'Shoes & accessories'], ['beauty_wigs', 'Beauty & wigs'], ['perfume_cosmetics', 'Perfume & cosmetics'], ['electronics', 'Electronics'], ['general', 'General']];
+var CATS = [['fashion', 'Fashion'], ['shoes_accessories', 'Shoes & accessories'], ['beauty_wigs', 'Beauty & wigs'], ['perfume_cosmetics', 'Perfume & cosmetics'], ['electronics', 'Electronics'], ['restaurant', 'Restaurant & food'], ['rental', 'Rentals'], ['services', 'Services & bookings'], ['general', 'General']];
 var CURS = [['NGN', '₦ Nigerian Naira (NGN)'], ['USD', '$ US Dollar (USD)'], ['GBP', '£ British Pound (GBP)'], ['EUR', '€ Euro (EUR)'], ['CAD', '$ Canadian Dollar (CAD)'], ['AUD', '$ Australian Dollar (AUD)']];
 var ACC = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a6ca', perfume_cosmetics: '#c7a8ff', electronics: '#4fe0cf', general: '#d4af37' };
 var ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' };
@@ -168,7 +168,7 @@ function orderCard(o) {
   return '<div class="card" style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(o.reference) + '</b><span class="pill">' + esc(o.status.replace(/_/g, ' ')) + '</span></div>' +
     '<span>' + m(o.total_minor, ST.store.currency) + ' · ' + esc(o.customer_name) + '</span><a class="inl" target="_blank" rel="noopener" href="https://wa.me/' + esc(o.customer_phone.replace(/\D/g, '')) + '">' + esc(o.customer_phone) + '</a>' +
     '<span class="hint" style="margin:0">' + (o.store_order_items || []).map(function (i) { return i.quantity + '× ' + esc(i.name_snapshot); }).join(', ') + '</span>' + (o.note ? '<span class="hint" style="margin:0">Note: ' + esc(o.note) + '</span>' : '') +
-    (acts ? '<div class="btn-row">' + acts + '</div>' : '') + '<button class="link-btn" style="align-self:flex-start" data-act="go" data-to="#/new">Create an invoice for this customer</button></div>';
+    (acts ? '<div class="btn-row">' + acts + '</div>' : '') + '<button class="link-btn" style="align-self:flex-start" data-act="st-inv" data-id="' + esc(o.id) + '">Create an invoice from this order</button></div>';
 }
 
 function shell(title, body, opt) { return '<div class="screen">' + H.bar(title, Object.assign({ back: false }, opt || {})) + body + '</div>'; }
@@ -472,7 +472,8 @@ document.addEventListener('input', function (e) {
 
 Z.storeReset = function () { TS = null; SU = null; ST = { loaded: false, loading: false, store: null, sub: null, prods: [], orders: [], q: '', sec: '', err: '' }; };
 /* ---- order alerts: only for real new orders ---- */
-var NT = { seen: null, on: false };
+var NT = { seen: null, on: false }, AUTOVID = false;
+setInterval(function () { if (AUTOVID || !S.user || !ST.loaded || /^#\/(new|edit|inv|theme)/.test(location.hash)) return; var seen = false; try { seen = localStorage.getItem('zs_vid'); } catch (e) { } if (!ST.store) return; AUTOVID = true; if (!seen && !document.querySelector('#scrim.on')) setTimeout(function () { ACT['st-video'](); }, 1200); }, 2500);
 function canNotify() { return 'Notification' in window; }
 function alertCard() {
   if (!canNotify()) return '';
@@ -480,6 +481,7 @@ function alertCard() {
   if (Notification.permission === 'denied') return '';
   return '<button class="card" data-act="st-alerts" style="width:100%;text-align:left;margin-top:0"><b>Get an alert for new orders</b><span class="hint" style="display:block;margin:2px 0 0">We only notify you when a customer places an order.</span></button>';
 }
+ACT['st-inv'] = function (t) { var o = ST.orders.filter(function (x) { return x.id === t.dataset.id; })[0]; if (!o) return; window.ZPRE = { cur: ST.store.currency, notes: 'Order ' + o.reference + ' · ' + o.customer_name + ' · ' + o.customer_phone, items: (o.store_order_items || []).map(function (i) { return { d: i.name_snapshot, q: String(i.quantity), p: String(i.unit_price_minor / 100) }; }) }; Z.go ? Z.go('#/new') : (location.hash = '#/new'); };
 ACT['st-alerts'] = async function () { try { var r = await Notification.requestPermission(); toast(r === 'granted' ? 'Order alerts on' : 'Alerts not allowed'); } catch (e) { } rerender(); };
 async function pollOrders() {
   if (!S.user || !ST.store || document.visibilityState !== 'visible') return;

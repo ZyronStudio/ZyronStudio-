@@ -6,6 +6,7 @@ const PRESET = {
   fashion: { tag: 'New in', acc: '#e7c4b0', ratio: '4/5', cols: 2 }, shoes_accessories: { tag: 'Fresh pairs', acc: '#7fb2ff', ratio: '1/1', cols: 2 },
   beauty_wigs: { tag: 'Beauty edit', acc: '#f0a6ca', ratio: '4/5', cols: 2 }, perfume_cosmetics: { tag: 'Signature scents', acc: '#c7a8ff', ratio: '3/4', cols: 2 },
   electronics: { tag: 'Latest gear', acc: '#4fe0cf', ratio: '1/1', cols: 2 }, general: { tag: 'Shop', acc: '#d4af37', ratio: '1/1', cols: 2 },
+  restaurant: { tag: 'Our menu', acc: '#ff9f43', ratio: '1/1', list: 1, cta: 'Add to order' }, rental: { tag: 'Available now', acc: '#4fa3ff', ratio: '16/10', cta: 'Request this' }, services: { tag: 'Our services', acc: '#b794f6', ratio: '4/3', list: 1, cta: 'Book this' },
 };
 
 export default function Storefront({ params }) {
@@ -28,7 +29,7 @@ export default function Storefront({ params }) {
 
   if (d === undefined) return <p className="mut c">Loading…</p>;
   if (!d) return <div className="c"><h1>Store not found</h1><p className="mut">This store may not be open yet.</p></div>;
-  const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, cta = 'Add to order', vars = tk && window.ZTheme ? window.ZTheme.cssVars(tk) : { '--acc': P.acc };
+  const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, cta = P.cta || 'Add to order', vars = tk && window.ZTheme ? window.ZTheme.cssVars(tk) : { '--acc': P.acc };
   const secs = [...new Set(all.map(p => p.category).filter(Boolean))];
   const products = all.filter(p => (!sec || p.category === sec) && (!q || (p.name + ' ' + (p.description || '')).toLowerCase().includes(q.toLowerCase())));
   const lines = Object.entries(cart).map(([id, n]) => ({ p: all.find(x => x.id === id), q: n })).filter(l => l.p);
@@ -56,7 +57,7 @@ export default function Storefront({ params }) {
     {all.length > 4 && <input className="srch" placeholder="Search products" value={q} onChange={e => setQ(e.target.value)} />}
     {secs.length > 0 && <div className="secs"><button className={!sec ? 'on' : ''} onClick={() => setSec('')}>All</button>{secs.map(c => <button key={c} className={sec === c ? 'on' : ''} onClick={() => setSec(c)}>{c}</button>)}</div>}
     <h2 className="tag">{P.tag}</h2>
-    <div className="grid">{products.map(p => (<button className="pc" key={p.id} onClick={() => setOpen(p)}>
+    <div className={'grid' + (P.list ? ' list' : '')}>{products.map(p => (<button className="pc" key={p.id} onClick={() => setOpen(p)}>
       <div className="ph">{p.images[0] && <img loading="lazy" decoding="async" src={imgUrl(p.images[0])} alt={p.name} />}{p.stock_status === 'out_of_stock' && <i>Sold out</i>}</div>
       <b>{p.name}</b><span>{money(p.price_minor, store.currency)}</span>{p.stock_status === 'made_to_order' && <small>Made to order</small>}</button>))}</div>
     {!products.length && <p className="mut c">{all.length ? 'No products match.' : 'Products coming soon.'}</p>}

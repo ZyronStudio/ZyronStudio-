@@ -16,7 +16,7 @@ var PRESETS = [
   { id: 'rose-modern', name: 'Rose Modern', primary: '#e11d74', mode: 'light', font: 'friendly', radius: 'round', button: 'solid' },
   { id: 'clean-light', name: 'Clean Light', primary: '#1f2937', mode: 'light', font: 'classic', radius: 'sharp', button: 'solid' }
 ];
-var CATEGORY_DEFAULT = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a6ca', perfume_cosmetics: '#c7a8ff', electronics: '#4fe0cf', general: '#d6b875' };
+var CATEGORY_DEFAULT = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a6ca', perfume_cosmetics: '#c7a8ff', electronics: '#4fe0cf', restaurant: '#ff9f43', rental: '#4fa3ff', services: '#b794f6', general: '#d6b875' };
 var FONTS = { modern: "Geist, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", classic: "Georgia, 'Times New Roman', serif", friendly: "'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" };
 var RADII = { sharp: [4, 4], soft: [14, 12], round: [22, 999] };
 
