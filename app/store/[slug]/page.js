@@ -51,7 +51,7 @@ export default function Storefront({ params }) {
   }
 
   return (<div className={tk && tk.button === 'outline' ? 'outline' : ''} style={{ ...vars, '--ratio': P.ratio }}>
-    {draft && <div className="banner">Preview — only you can see this. Publish from your dashboard.</div>}
+    {draft && <div className="pvbanner">Preview — only you can see this. Publish from your dashboard.</div>}
     <header className="hero">{store.logo_path ? <img className="logo" src={imgUrl(store.logo_path)} alt={store.name} /> : null}<h1>{store.name}</h1>{store.description && <p>{store.description}</p>}
       <div className="meta">{store.address && <span>{store.address}</span>}{store.instagram && <a href={'https://instagram.com/' + store.instagram.replace('@', '')} target="_blank" rel="noreferrer">@{store.instagram.replace('@', '')}</a>}</div></header>
     {all.length > 4 && <input className="srch" placeholder="Search products" value={q} onChange={e => setQ(e.target.value)} />}
@@ -64,13 +64,13 @@ export default function Storefront({ params }) {
 
     {count > 0 && !co && <button className="bar" onClick={() => setCo(true)}>Review order · {count} item{count > 1 ? 's' : ''} · {money(total, store.currency)}</button>}
 
-    {open && <div className="modal" onClick={e => e.target === e.currentTarget && setOpen(null)}><div className="sheet">
+    {open && <div className="smodal" onClick={e => e.target === e.currentTarget && setOpen(null)}><div className="ssheet">
       <div className="gal">{open.images.map(i => <img key={i} loading="lazy" src={imgUrl(i)} alt="" />)}</div>
       <h2>{open.name}</h2><p className="pr">{money(open.price_minor, store.currency)}</p>{open.description && <p className="mut">{open.description}</p>}
       {open.stock_status === 'made_to_order' && <p className="mut">Made to order — the seller will confirm timing.</p>}
       <button className="btn gold" disabled={open.stock_status === 'out_of_stock'} onClick={() => { add(open.id); setOpen(null); }}>{open.stock_status === 'out_of_stock' ? 'Sold out' : cta}</button></div></div>}
 
-    {co && <div className="modal" onClick={e => e.target === e.currentTarget && setCo(false)}><form className="sheet" onSubmit={order}>
+    {co && <div className="smodal" onClick={e => e.target === e.currentTarget && setCo(false)}><form className="ssheet" onSubmit={order}>
       <h2>Your order</h2>
       {lines.map(l => <div className="ln" key={l.p.id}><span>{l.p.name}</span><span className="qty"><button type="button" onClick={() => add(l.p.id, -1)}>−</button>{l.q}<button type="button" onClick={() => add(l.p.id, 1)}>+</button></span><span>{money(l.p.price_minor * l.q, store.currency)}</span></div>)}
       <p className="tot">Total <b>{money(total, store.currency)}</b></p>
@@ -80,7 +80,7 @@ export default function Storefront({ params }) {
       {err && <p className="err">{err}</p>}
       <button type="submit" className="btn gold sticky" disabled={busy}>{busy ? 'Sending…' : 'Send order on WhatsApp'}</button></form></div>}
 
-    {done && <div className="modal"><div className="sheet"><h2>Order sent</h2><p>Reference <b>{done.reference}</b></p><p className="mut">Your order is saved and awaiting confirmation from {done.store_name}. Tap the button to send the details to them on WhatsApp.</p>
+    {done && <div className="smodal"><div className="ssheet"><h2>Order sent</h2><p>Reference <b>{done.reference}</b></p><p className="mut">Your order is saved and awaiting confirmation from {done.store_name}. Tap the button to send the details to them on WhatsApp.</p>
       <a className="btn gold" href={'https://wa.me/' + done.whatsapp + '?text=' + encodeURIComponent(done.text)} target="_blank" rel="noreferrer">Send details on WhatsApp</a><button className="btn" onClick={() => setDone(null)}>Close</button></div></div>}
     <footer className="ft">Store by <a href="/">Zyron</a></footer>
   </div>);

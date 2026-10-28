@@ -21,7 +21,12 @@ var FONTS = { modern: "Geist, system-ui, -apple-system, 'Segoe UI', Roboto, sans
 var RADII = { sharp: [4, 4], soft: [14, 12], round: [22, 999] };
 
 function defaults(category) { return { preset: '', primary: CATEGORY_DEFAULT[category] || CATEGORY_DEFAULT.general, mode: 'dark', font: 'modern', radius: 'soft', button: 'solid' }; }
-function normalize(t, category) { var d = defaults(category); t = t || {}; var o = {}; Object.keys(d).forEach(function (k) { o[k] = t[k] || d[k]; }); if (!/^#[0-9a-fA-F]{6}$/.test(o.primary)) o.primary = d.primary; return o; }
+var GF = { 'Clean & modern': ['Inter', 'Poppins', 'DM Sans', 'Manrope', 'Plus Jakarta Sans', 'Outfit', 'Urbanist', 'Sora', 'Lexend', 'Montserrat', 'Raleway', 'Nunito Sans', 'Work Sans', 'Figtree', 'Albert Sans'], 'Elegant serif': ['Playfair Display', 'Cormorant Garamond', 'Lora', 'Merriweather', 'DM Serif Display', 'Libre Baskerville', 'Bodoni Moda', 'Cinzel', 'Fraunces', 'EB Garamond', 'Crimson Text'], 'Bold & display': ['Bebas Neue', 'Anton', 'Oswald', 'Archivo Black', 'Syne', 'Unbounded', 'Righteous', 'Abril Fatface', 'Rubik', 'Barlow Condensed', 'Space Grotesk'], 'Friendly & rounded': ['Nunito', 'Quicksand', 'Comfortaa', 'Baloo 2', 'Fredoka', 'Varela Round', 'Mulish'], 'Handwritten & luxe': ['Pacifico', 'Dancing Script', 'Great Vibes', 'Satisfy', 'Caveat', 'Lobster', 'Sacramento', 'Parisienne', 'Allura'], 'Techy & mono': ['JetBrains Mono', 'Space Mono', 'IBM Plex Mono', 'Orbitron', 'Exo 2'] };
+function validFont(f) { return !!FONTS[f] || /^g:[A-Za-z0-9 ]{2,40}$/.test(f || ''); }
+var _loadedF = {};
+function loadFont(f) { if (!/^g:/.test(f || '') || typeof document === 'undefined') return; var n = f.slice(2); if (_loadedF[n] || !validFont(f)) return; _loadedF[n] = 1; var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(n).replace(/%20/g, '+') + ':wght@400;500;600;700;800&display=swap'; document.head.appendChild(l); }
+function fontCss(f) { if (FONTS[f]) return FONTS[f]; if (validFont(f)) return "'" + f.slice(2) + "', system-ui, sans-serif"; return FONTS.modern; }
+function normalize(t, category) { var d = defaults(category); t = t || {}; var o = {}; Object.keys(d).forEach(function (k) { o[k] = t[k] || d[k]; }); if (!/^#[0-9a-fA-F]{6}$/.test(o.primary)) o.primary = d.primary; if (!validFont(o.font)) o.font = d.font; return o; }
 
 /* Build every colour from ONE primary colour, then check contrast and fix what fails. */
 function build(theme, category) {
@@ -40,10 +45,10 @@ function build(theme, category) {
   tk.accent = hsl2hex(h + 28, Math.min(s + 5, 70), dark ? 66 : 42);
   if (ratio(tk.text, tk.bg) < 4.5) { tk.text = dark ? '#ffffff' : '#000000'; notes.push('Text colour was corrected for readability.'); }
   if (ratio(tk.muted, tk.bg) < 4.5) { tk.muted = dark ? hsl2hex(h, 10, 78) : hsl2hex(h, 10, 28); notes.push('Supporting text was lightened for readability.'); }
-  tk.radius = RADII[t.radius][0]; tk.btnRadius = RADII[t.radius][1]; tk.font = FONTS[t.font]; tk.button = t.button; tk.mode = t.mode;
+  tk.radius = RADII[t.radius][0]; tk.btnRadius = RADII[t.radius][1]; tk.fontId = t.font; tk.font = fontCss(t.font); tk.button = t.button; tk.mode = t.mode;
   tk.notes = notes; tk.contrast = { text: Math.round(ratio(tk.text, tk.bg) * 10) / 10, button: Math.round(ratio(tk.onPrimary, tk.primary) * 10) / 10 };
   return tk;
 }
-function cssVars(tk) { return { '--bg': tk.bg, '--surface': tk.surface, '--inset': tk.inset, '--line': tk.border, '--tx': tk.text, '--mut': tk.muted, '--acc': tk.primary, '--onacc': tk.onPrimary, '--acc2': tk.accent, '--r': tk.radius + 'px', '--rb': tk.btnRadius + 'px', '--font': tk.font }; }
-root.ZTheme = { PRESETS: PRESETS, FONTS: FONTS, defaults: defaults, normalize: normalize, build: build, cssVars: cssVars, ratio: ratio };
+function cssVars(tk) { loadFont(tk.fontId); return { '--bg': tk.bg, '--surface': tk.surface, '--inset': tk.inset, '--line': tk.border, '--tx': tk.text, '--mut': tk.muted, '--acc': tk.primary, '--onacc': tk.onPrimary, '--acc2': tk.accent, '--r': tk.radius + 'px', '--rb': tk.btnRadius + 'px', '--font': tk.font }; }
+root.ZTheme = { GF: GF, validFont: validFont, loadFont: loadFont, PRESETS: PRESETS, FONTS: FONTS, defaults: defaults, normalize: normalize, build: build, cssVars: cssVars, ratio: ratio };
 })(typeof window !== 'undefined' ? window : this);
