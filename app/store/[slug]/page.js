@@ -37,7 +37,19 @@ export default function Storefront({ params }) {
   }, []);
   useEffect(() => { document.body.style.overflow = (open || co || done) ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [open, co, done]);
 
-  if (d === undefined) return <p className="mut c">Loading…</p>;
+  useEffect(() => {
+    if (!d || !d.store) return;
+    const st = d.store, desc = (st.description || 'Shop ' + st.name + ' online and order on WhatsApp.').slice(0, 160);
+    document.title = st.name + ' | Shop online';
+    const set = (k, v, attr = 'name') => { let m = document.head.querySelector('meta[' + attr + '="' + k + '"]'); if (!m) { m = document.createElement('meta'); m.setAttribute(attr, k); document.head.appendChild(m); } m.setAttribute('content', v); };
+    set('description', desc); set('og:title', st.name, 'property'); set('og:description', desc, 'property'); set('og:type', 'website', 'property');
+    if (st.logo_path) set('og:image', imgUrl(st.logo_path), 'property');
+    try { const raw = localStorage.getItem('zs_cart_' + slug); if (raw) { const c = JSON.parse(raw), ok = {}; Object.keys(c).forEach(id => { if (d.products.some(p => p.id === id) && c[id] > 0) ok[id] = Math.min(50, c[id]); }); setCart(ok); } } catch (e) { }
+    try { const pid = new URLSearchParams(location.search).get('p'); const pr = pid && d.products.find(p => p.id === pid); if (pr) setOpen(pr); } catch (e) { }
+  }, [d]);
+  useEffect(() => { try { localStorage.setItem('zs_cart_' + slug, JSON.stringify(cart)); } catch (e) { } }, [cart]);
+
+  if (d === undefined) return <div aria-busy="true"><div className="sk" style={{ height: 220, margin: '40px 0 20px' }} /><div className="grid">{[0, 1, 2, 3].map(i => <div key={i}><div className="sk" style={{ aspectRatio: '4/5' }} /><div className="sk" style={{ height: 14, width: '70%', marginTop: 10 }} /></div>)}</div></div>;
   if (!d) return <div className="c"><h1>Store not found</h1><p className="mut">This store may not be open yet.</p></div>;
   const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, cta = P.cta || 'Add to order', vars = tk && window.ZTheme ? window.ZTheme.cssVars(tk) : { '--acc': P.acc };
   const secs = [...new Set(all.map(p => p.category).filter(Boolean))];
@@ -62,22 +74,26 @@ export default function Storefront({ params }) {
 
   return (<div className={tk && tk.button === 'outline' ? 'outline' : ''} style={{ ...vars, '--ratio': P.ratio }}>
     {draft && <div className="pvbanner">Preview — only you can see this. Publish from your dashboard.</div>}
+    <nav className="topb"><div className="tbl">{store.logo_path ? <img src={imgUrl(store.logo_path)} alt="" /> : <i>{store.name.charAt(0).toUpperCase()}</i>}<b>{store.name}</b></div>
+      <div className="tbr">{store.whatsapp && <a className="ib" aria-label="Chat on WhatsApp" href={'https://wa.me/' + String(store.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello ' + store.name + ', I have a question.')} target="_blank" rel="noreferrer">Chat</a>}
+        <button className="ib bag" aria-label="Your order" onClick={() => count > 0 ? setCo(true) : window.scrollTo({ top: 360, behavior: 'smooth' })}>Order{count > 0 && <span>{count}</span>}</button></div></nav>
     <header className="hero">{store.logo_path ? <img className="logo" src={imgUrl(store.logo_path)} alt={store.name} /> : null}<h1>{store.name}</h1>{store.description && <p>{store.description}</p>}
       <div className="meta">{store.address && <span>{store.address}</span>}{store.instagram && <a href={'https://instagram.com/' + store.instagram.replace('@', '')} target="_blank" rel="noreferrer">@{store.instagram.replace('@', '')}</a>}</div></header>
     {all.length > 4 && <input className="srch" placeholder="Search products" value={q} onChange={e => setQ(e.target.value)} />}
     {secs.length > 0 && <div className="secs"><button className={!sec ? 'on' : ''} onClick={() => setSec('')}>All</button>{secs.map(c => <button key={c} className={sec === c ? 'on' : ''} onClick={() => setSec(c)}>{c}</button>)}</div>}
     <h2 className="tag">{P.tag}</h2>
     <div className={'grid' + (P.list ? ' list' : '')}>{products.map(p => (<button className="pc" key={p.id} onClick={() => setOpen(p)}>
-      <div className="ph">{p.images[0] && <img loading="lazy" decoding="async" src={imgUrl(p.images[0])} alt={p.name} />}{p.stock_status === 'out_of_stock' && <i>Sold out</i>}</div>
+      <div className="ph">{p.images[0] ? <img loading="lazy" decoding="async" src={imgUrl(p.images[0])} alt={p.name} /> : <em className="noimg">{p.name.charAt(0).toUpperCase()}</em>}{p.stock_status === 'out_of_stock' && <i>Sold out</i>}</div>
       <b>{p.name}</b><span>{money(p.price_minor, store.currency)}</span>{p.stock_status === 'made_to_order' && <small>Made to order</small>}</button>))}</div>
     {!products.length && <p className="mut c">{all.length ? 'No products match.' : 'Products coming soon.'}</p>}
 
     {count > 0 && !co && <button className="bar" onClick={() => setCo(true)}>Review order · {count} item{count > 1 ? 's' : ''} · {money(total, store.currency)}</button>}
 
     {open && <div className="smodal" onClick={e => e.target === e.currentTarget && setOpen(null)}><div className="ssheet">
-      <div className="gal">{open.images.map(i => <img key={i} loading="lazy" src={imgUrl(i)} alt="" />)}</div>
+      {open.images.length > 0 && <div className="gal">{open.images.map(i => <img key={i} loading="lazy" src={imgUrl(i)} alt={open.name} />)}</div>}{open.images.length > 1 && <small className="mut" style={{ textAlign: 'center' }}>Swipe to see {open.images.length} photos</small>}
       <h2>{open.name}</h2><p className="pr">{money(open.price_minor, store.currency)}</p>{open.description && <p className="mut">{open.description}</p>}
       {open.stock_status === 'made_to_order' && <p className="mut">Made to order — the seller will confirm timing.</p>}
+      <button type="button" className="btn" onClick={async () => { const u = location.origin + location.pathname + '?p=' + open.id; try { if (navigator.share) await navigator.share({ title: open.name, text: open.name + ' at ' + store.name, url: u }); else { await navigator.clipboard.writeText(u); setErr('Link copied'); setTimeout(() => setErr(''), 1500); } } catch (e) { } }}>Share this product</button>
       <button className="btn gold" disabled={open.stock_status === 'out_of_stock'} onClick={() => { add(open.id); setOpen(null); }}>{open.stock_status === 'out_of_stock' ? 'Sold out' : cta}</button></div></div>}
 
     {co && <div className="smodal" onClick={e => e.target === e.currentTarget && setCo(false)}><form className="ssheet" onSubmit={order}>
@@ -92,6 +108,6 @@ export default function Storefront({ params }) {
 
     {done && <div className="smodal"><div className="ssheet"><h2>Order sent</h2><p>Reference <b>{done.reference}</b></p><p className="mut">Your order is saved and awaiting confirmation from {done.store_name}. Tap the button to send the details to them on WhatsApp.</p>
       <a className="btn gold" href={'https://wa.me/' + done.whatsapp + '?text=' + encodeURIComponent(done.text)} target="_blank" rel="noreferrer">Send details on WhatsApp</a><button className="btn" onClick={() => setDone(null)}>Close</button></div></div>}
-    <footer className="ft">Store by <a href="/">Zyron</a></footer>
+    <footer className="ft"><div className="fc"><b>{store.name}</b>{store.address && <span>{store.address}</span>}{store.whatsapp && <a href={'https://wa.me/' + String(store.whatsapp).replace(/\D/g, '')} target="_blank" rel="noreferrer">Message us on WhatsApp</a>}{store.instagram && <a href={'https://instagram.com/' + store.instagram.replace('@', '')} target="_blank" rel="noreferrer">@{store.instagram.replace('@', '')} on Instagram</a>}</div>Store by <a href="/">Zyron Studio</a></footer>
   </div>);
 }
