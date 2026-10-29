@@ -457,3 +457,4 @@ svg path[stroke="var(--gold)"]{stroke-dasharray:600;animation:drawline 1.6s ease
 .topbar h1,.screen>.topbar+*{letter-spacing:-.02em}
 ::selection{background:rgba(226,187,98,.35)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+html,body{overscroll-behavior-y:contain}

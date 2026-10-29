@@ -27,6 +27,16 @@ export default function Storefront({ params }) {
     setD(null);
   })().catch(() => setD(null)); }, [slug]);
 
+  useEffect(() => {
+    let sx = 0, sy = 0, sh = null, st = 0;
+    const ts = (e) => { sh = e.target.closest && e.target.closest('.ssheet'); if (!sh || e.touches.length !== 1) { sh = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); };
+    const tm = (e) => { if (!sh) return; const dy = e.touches[0].clientY - sy; if (dy > 0 && sh.scrollTop <= 0 && Math.abs(e.touches[0].clientX - sx) < dy) { sh.style.transition = 'none'; sh.style.transform = 'translateY(' + dy + 'px)'; } };
+    const te = (e) => { if (!sh) return; const dy = e.changedTouches[0].clientY - sy, dx = e.changedTouches[0].clientX - sx, el = sh; sh = null; el.style.transition = ''; el.style.transform = ''; if (sh === null && dy > 110 && Math.abs(dx) < dy && el.scrollTop <= 0 && !(e.target.closest && e.target.closest('input,textarea'))) { setOpen(null); setCo(false); setDone(null); } };
+    document.addEventListener('touchstart', ts, { passive: true }); document.addEventListener('touchmove', tm, { passive: true }); document.addEventListener('touchend', te, { passive: true });
+    return () => { document.removeEventListener('touchstart', ts); document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); };
+  }, []);
+  useEffect(() => { document.body.style.overflow = (open || co || done) ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [open, co, done]);
+
   if (d === undefined) return <p className="mut c">Loading…</p>;
   if (!d) return <div className="c"><h1>Store not found</h1><p className="mut">This store may not be open yet.</p></div>;
   const { store, products: all } = d, P = PRESET[store.category] || PRESET.general, cta = P.cta || 'Add to order', vars = tk && window.ZTheme ? window.ZTheme.cssVars(tk) : { '--acc': P.acc };

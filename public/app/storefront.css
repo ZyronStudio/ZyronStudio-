@@ -57,3 +57,4 @@ body{margin:0;font-family:var(--font,Geist,system-ui,sans-serif);background:var(
 .ssheet .qty button{width:34px;height:34px;display:grid;place-items:center;padding:0}
 .ssheet h2{font-size:22px}
 :root{--bg:#05060a;--surface:#10131b;--inset:#0b0d13;--line:#222838;--tx:#f3f1ea;--mut:#9aa3b2;--acc:#d4af37;--onacc:#0a0a0a;--r:16px;--rb:14px}
+html,body{overscroll-behavior-y:contain}.pc{touch-action:manipulation}

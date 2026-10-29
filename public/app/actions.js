@@ -132,6 +132,37 @@ async function saveInvoice(send) {
 }
 function $$btns(dis) { Z.$$('.totalbar .btn').forEach(function (b) { b.disabled = dis; }); }
 
+
+/* ================= quick invoice: three fields, one tap ================= */
+function qiRow(n) { return '<div class="qi-row" style="display:grid;grid-template-columns:1fr 130px;gap:8px"><input class="in" data-qi="d" maxlength="200" placeholder="' + (n ? 'Another item' : 'What is it for? e.g. Dress, Logo design') + '" autocomplete="off"><input class="in money" data-qi="p" inputmode="decimal" placeholder="Amount" autocomplete="off"></div>'; }
+function qiTotal() { var t = 0; Z.$$('[data-qi=p]').forEach(function (i) { t += num(i.value); }); var e = $('#qi_tot'); if (e) e.textContent = money(t, (S.profile && S.profile.default_currency) || 'NGN'); }
+function qiSheet() {
+  var dl = '<datalist id="qi_cl">' + (S.clients || []).map(function (c) { return '<option value="' + esc(c.name) + '">'; }).join('') + '</datalist>';
+  Z.openSheet('Quick invoice', '<div style="display:flex;flex-direction:column;gap:12px"><p style="margin:0;color:var(--muted)">Fill three things. We do the rest and give you a link to send.</p>' +
+    '<div class="field"><label for="qi_name">Customer name</label><input class="in" id="qi_name" list="qi_cl" maxlength="200" autocomplete="off" placeholder="Who is paying?">' + dl + '</div>' +
+    '<div class="field"><label for="qi_phone">Their WhatsApp (optional)</label><input class="in" id="qi_phone" type="tel" inputmode="tel" placeholder="0803 123 4567"></div>' +
+    '<div class="field"><label>Items</label><div id="qi_rows" style="display:flex;flex-direction:column;gap:8px">' + qiRow(0) + '</div><button type="button" class="link-btn" style="align-self:flex-start" data-act="qi-add">+ Add another item</button></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:18px"><span>Total</span><b id="qi_tot">' + money(0, (S.profile && S.profile.default_currency) || 'NGN') + '</b></div>' +
+    '<div class="err" id="qi_err" role="alert"></div><button class="btn btn-gold btn-block" data-act="qi-go">Create &amp; share</button><button class="link-btn" data-act="new-inv" style="align-self:center">Need tax, discount or dates? Use the full form</button></div>');
+}
+async function qiGo(btn) {
+  if (btn.disabled) return; var err = $('#qi_err'); err.textContent = '';
+  var name = val('qi_name').trim(), phone = val('qi_phone').trim(), items = [];
+  Z.$$('.qi-row').forEach(function (r) { var d = $('[data-qi=d]', r).value.trim(), p = num($('[data-qi=p]', r).value); if (d || p) items.push({ d: d, q: '1', p: String(p) }); });
+  if (name.length < 2) { err.textContent = 'Type the customer name.'; return; }
+  if (!items.length || items.some(function (i) { return !i.d; })) { err.textContent = 'Say what each item is for.'; return; }
+  if (items.some(function (i) { return !(num(i.p) > 0); })) { err.textContent = 'Add an amount above zero for each item.'; return; }
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    var c = (S.clients || []).filter(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })[0], cid = c && c.id;
+    if (!cid) { var row = await Z.q(sb.from('clients').insert({ user_id: S.user.id, name: name, phone: phone || null }).select('id').single()); cid = row.id; await Z.loadAll(true); }
+    else if (phone && !c.phone) { await Z.q(sb.from('clients').update({ phone: phone }).eq('id', cid)); }
+    await initEditor({ n: 'new', q: '' }, '#/new'); var e = Z.getE(); e.client_id = cid; e.items = items;
+    Z.hideSheet(); await saveInvoice(true);
+  } catch (er) { btn.disabled = false; btn.textContent = 'Create & share'; err.textContent = Z.errMsg(er); }
+}
+document.addEventListener('input', function (e) { if (e.target && e.target.dataset && e.target.dataset.qi === 'p') qiTotal(); if (e.target && e.target.id === 'qi_name') { var c = (S.clients || []).filter(function (x) { return x.name.toLowerCase() === e.target.value.trim().toLowerCase(); })[0], p = $('#qi_phone'); if (c && c.phone && p && !p.value) p.value = c.phone; } });
+
 /* ================= sheets ================= */
 function shareSheet(id) {
   var i = Z.invById(id); if (!i) return; var c = Z.clientById(i.client_id) || {}, link = Z.shareUrl(i.share_token);
@@ -333,6 +364,9 @@ var ACT = {
   'confirm-yes': function () { var f = pendingConfirm; pendingConfirm = null; closeThen(function () { if (f) f(); }); },
   copy: function (t) { Z.copyText(t.dataset.v); },
   retry: function () { loadErr = null; if (S.user) loadApp(); else render(); },
+  'qi-open': function () { closeThen(qiSheet); },
+  'qi-add': function () { var r = $('#qi_rows'); if (r.children.length >= 20) return; r.insertAdjacentHTML('beforeend', qiRow(1)); },
+  'qi-go': function (t) { qiGo(t); },
   'new-inv': function (t) { var c = t.dataset.client; closeThen(function () { go('#/new' + (c ? '?client=' + c : '')); }); },
   'home-filter': function (t) { S.filter = t.dataset.v === 'sent' ? 'sent' : t.dataset.v; S.q = ''; go('#/invoices'); },
   invfilter: function (t) { S.filter = t.dataset.v; render(); },

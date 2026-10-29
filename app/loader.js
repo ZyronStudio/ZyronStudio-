@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 const SCRIPTS = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js',
-  '/app/qr.js', '/app/core.js', '/app/screens.js', '/app/extra.js', '/app/actions.js', '/app/theme.js', '/app/store.js', '/app/pdf.js',
+  '/app/qr.js', '/app/core.js', '/app/screens.js', '/app/extra.js', '/app/actions.js', '/app/theme.js', '/app/store.js', '/app/pdf.js', '/app/gestures.js',
 ];
 
 function load(src) {

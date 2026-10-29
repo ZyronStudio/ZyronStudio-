@@ -139,7 +139,7 @@ SCR.invoices = function () {
   var counts = {}; ['all', 'draft', 'sent', 'partially_paid', 'overdue', 'paid'].forEach(function (k) { counts[k] = S.invoices.filter(function (i) { return filterMatch(i, k); }).length; });
   var labels = { all: 'All', draft: 'Drafts', sent: 'Sent', partially_paid: 'Part paid', overdue: 'Overdue', paid: 'Paid' };
   var rows = S.invoices.filter(function (i) { return filterMatch(i, f) && (!qq || (clientName(i) + ' ' + i.invoice_number).toLowerCase().indexOf(qq) >= 0); });
-  var h = '<div class="screen">' + bar('Invoices', { back: false, right: '<button class="btn btn-gold" data-act="new-inv" style="min-height:40px;padding:8px 14px">' + ic('plus', 'ic-sm') + 'New</button>' });
+  var h = '<div class="screen">' + bar('Invoices', { back: false, right: '<button class="btn btn-gold" data-act="qi-open" style="min-height:40px;padding:8px 14px">' + ic('plus', 'ic-sm') + 'New</button>' });
   h += '<div class="search">' + ic('search') + '<input class="in" id="invsearch" type="search" placeholder="Search client or number" value="' + esc(S.q) + '" autocomplete="off"></div>';
   h += '<div class="chiprow">' + Object.keys(labels).map(function (k) { return '<button class="chip" data-act="invfilter" data-v="' + k + '" aria-pressed="' + (f === k) + '">' + labels[k] + ' ' + counts[k] + '</button>'; }).join('') + '</div>';
   h += rows.length ? '<div class="card list" id="invlist" style="padding-block:4px 6px">' + rows.map(invRow).join('') + '</div>' :
@@ -282,7 +282,8 @@ SCR.more = function () {
     m('repeat', 'Templates & recurring', 'Reuse invoices and repeat monthly', '#/templates') +
     m('user', 'Invoice & account settings', 'Bank details, invoice defaults, notifications', '#/settings') +
     m('card', 'Plan & billing', 'Trial status and pricing', '#/plan') +
-    m('spark', 'Video tutorial', 'Watch how Zyron Studio works', '', 'st-video') +
+    m('spark', 'Quick guide', 'Pictures that show every step', '', 'st-guide') +
+    m('spark', 'Video tutorial', 'Watch it with voice and music', '', 'st-video') +
     m('chat', 'Give feedback', 'Tell us how Zyron Studio is working for you', '', 'fb-open') +
     m('help', 'Help & FAQ', 'Tutorial, answers and support', '#/help') +
     m('share', 'Invite a friend', 'Share Zyron Studio on WhatsApp', null, 'invite') +
