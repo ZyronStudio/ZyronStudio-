@@ -204,7 +204,7 @@ SCR.shome = function () {
   var h = vidCard() + dash() + '<div class="card" style="display:flex;gap:14px;align-items:center">' + logoEl(56) + '<div style="min-width:0"><b style="font-size:19px;display:block;overflow-wrap:anywhere">' + esc(s.name) + '</b><span class="pill ' + (live ? 'paid' : '') + '">' + (live ? 'Live' : s.status === 'suspended' ? 'Suspended' : 'Not published') + '</span></div></div>' +
     '<div class="card" style="display:flex;flex-direction:column;gap:12px"><span class="lbl">Your store link</span><b style="overflow-wrap:anywhere;color:var(--gold)">' + esc(location.host + '/store/' + s.slug) + '</b>' +
     '<div class="btn-row"><a class="btn btn-grow" target="_blank" rel="noopener" href="/store/' + esc(s.slug) + '">' + (live ? 'View store' : 'Preview') + '</a>' + '<button class="btn btn-grow" data-act="st-copy">Copy link</button>' + (live ? '<button class="btn btn-gold btn-grow" data-act="st-share">Share link</button>' : s.status === 'suspended' ? '' : '<button class="btn btn-gold btn-grow" data-act="st-publish">Publish</button>') + '</div>' +
-    (!live && s.status !== 'suspended' && !pub ? '<span class="hint" style="margin:0">Add at least one product, then publish.</span>' : '') + (live ? '<button class="link-btn" style="align-self:flex-start" data-act="st-unpublish">Take store offline</button>' : '') + '</div>' +
+    (!live && s.status !== 'suspended' && !pub ? '<span class="hint" style="margin:0">Add at least one product, then publish.</span>' : '') + (live ? '<button class="link-btn" style="align-self:flex-start" data-act="st-unpublish">Take store offline</button>' : '') + (s.status !== 'suspended' ? '<button class="link-btn" style="align-self:flex-start;color:var(--danger,#e5484d)" data-act="st-delstore">Delete this store</button>' : '') + '</div>' +
     '<button class="card" data-act="go" data-to="#/theme" style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;margin-top:0"><span><b>Customise your store</b><span class="hint" style="display:block;margin:2px 0 0">Theme, colours, logo and style</span></span><span style="font-size:20px">›</span></button>' +
     (pend.length ? '<button class="card" data-act="go" data-to="#/orders" style="width:100%;text-align:left;border-color:var(--gold);margin:12px 0 0"><b>' + pend.length + ' order' + (pend.length > 1 ? 's' : '') + ' to confirm</b><span class="hint" style="display:block;margin:2px 0 0">Tap to review</span></button>' : '');
   if (unpaid) h += '<button class="card" data-act="go" data-to="#/billing" style="width:100%;text-align:left;display:flex;justify-content:space-between"><span><b>' + unpaid + ' unpaid invoice' + (unpaid > 1 ? 's' : '') + '</b><span class="hint" style="display:block;margin:2px 0 0">Tap to follow up</span></span><span>›</span></button>';
@@ -231,6 +231,22 @@ SCR.sorders = function () {
 };
 document.addEventListener('input', function (e) { if (e.target && e.target.id === 'st_q') { ST.q = e.target.value; var g = document.getElementById('st_grid'); if (g) g.innerHTML = gridHTML(); } });
 ACT['st-sec'] = function (t) { ST.sec = t.dataset.s; rerender(); };
+ACT['st-delstore'] = function () {
+  Z.openSheet('Delete your store?', '<p style="margin:0;color:var(--muted)">This permanently deletes <b>' + esc(ST.store.name) + '</b>, all its products, photos and orders. Your store link will stop working. Your invoices are not affected. This cannot be undone.</p><div class="field"><label for="ds_txt">Type DELETE to confirm</label><input class="in" id="ds_txt" autocomplete="off" autocapitalize="characters"></div><div class="err" id="ds_err" role="alert"></div><div class="btn-row"><button class="btn btn-grow" data-act="sheet-close">Keep my store</button><button class="btn btn-danger btn-grow" data-act="st-delstore-yes">Delete forever</button></div>');
+};
+ACT['st-delstore-yes'] = async function (t) {
+  var i = document.getElementById('ds_txt'), er = document.getElementById('ds_err');
+  if (!i || i.value.trim().toUpperCase() !== 'DELETE') { if (er) er.textContent = 'Type DELETE to confirm'; return; }
+  if (t.disabled) return; t.disabled = true;
+  try {
+    var c = sb(), id = ST.store.id, paths = [];
+    if (ST.store.logo_path) paths.push(ST.store.logo_path);
+    var im = await c.from('store_product_images').select('path').eq('store_id', id); (im.data || []).forEach(function (x) { if (x.path) paths.push(x.path); });
+    var r = await c.from('stores').delete().eq('id', id); if (r.error) throw r.error;
+    if (paths.length) { try { await c.storage.from('store-media').remove(paths); } catch (e) { } }
+    Z.closeSheet(); await load(true); toast('Your store was deleted'); (window.ZA && window.ZA.render && window.ZA.render());
+  } catch (e) { t.disabled = false; toast(Z.errMsg(e), true); }
+};
 ACT['st-unpublish'] = async function () { try { var r = await sb().from('stores').update({ status: 'draft' }).eq('id', ST.store.id); if (r.error) throw r.error; await load(true); toast('Your store is offline'); } catch (e) { toast(Z.errMsg(e), true); } };
 
 var PH = [], EDIT = null;

@@ -458,3 +458,14 @@ svg path[stroke="var(--gold)"]{stroke-dasharray:600;animation:drawline 1.6s ease
 ::selection{background:rgba(226,187,98,.35)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 html,body{overscroll-behavior-y:contain}
+
+/* polish v3 */
+.card{transition:transform .18s ease,border-color .2s ease,box-shadow .2s ease}
+button.card:active,a.card:active{transform:scale(.985)}
+.btn{transition:transform .12s ease,box-shadow .2s ease,filter .2s}.btn:active{transform:scale(.97)}
+.btn-gold{box-shadow:0 6px 22px -8px color-mix(in srgb,var(--gold,#d9b45b) 70%,transparent)}
+.btn-gold:hover{filter:brightness(1.06)}
+.screen>*{animation:zin .35s cubic-bezier(.2,.7,.2,1) both}
+.screen>*:nth-child(2){animation-delay:.04s}.screen>*:nth-child(3){animation-delay:.08s}.screen>*:nth-child(4){animation-delay:.12s}.screen>*:nth-child(n+5){animation-delay:.16s}
+@keyframes zin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.screen>*{animation:none}}

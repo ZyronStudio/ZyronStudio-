@@ -387,7 +387,7 @@ var ACT = {
   'pdf-go': function (t) { var pp = pendingPrint, w = t.dataset.w === '1'; closeThen(function () { if (pp) printHTML(pp.html, w, pp.theme); }); },
   'pub-print': function () { if (PUB) printChoice(Z.invoiceHTML(PUB.d, { growth: true }), PUB.d.invoice.theme); },
   'dup-inv': async function (t) { try { var id = await Z.q(sb.rpc('duplicate_invoice', { p_id: t.dataset.id })); await Z.loadAll(true); toast('Duplicated as a new draft'); go('#/edit/' + id); } catch (e) { toast(Z.errMsg(e), true); } },
-  'del-inv': function (t) { var id = t.dataset.id; confirmSheet('Delete this draft?', 'This cannot be undone.', 'Delete draft', async function () { try { await Z.q(sb.from('invoices').delete().eq('id', id)); await Z.loadAll(true); toast('Draft deleted'); location.replace('#/invoices'); } catch (e) { toast(Z.errMsg(e), true); } }, true); },
+  'del-inv': function (t) { var id = t.dataset.id; confirmSheet('Delete this invoice?', 'This cannot be undone.', 'Delete', async function () { try { await Z.q(sb.from('invoices').delete().eq('id', id)); await Z.loadAll(true); toast('Invoice deleted'); location.replace('#/invoices'); } catch (e) { toast(Z.errMsg(e), true); } }, true); },
   'cancel-inv': function (t) { var id = t.dataset.id; confirmSheet('Cancel this invoice?', 'Your client’s link will stop working. This is for invoices that were sent by mistake and have no payments.', 'Cancel invoice', async function () { try { await Z.q(sb.rpc('cancel_invoice', { p_id: id })); await refreshDetail(id); toast('Invoice cancelled'); } catch (e) { toast(Z.errMsg(e), true); } }, true); },
   'pay-inv': function (t) { paySheet(t.dataset.id); },
   'pay-full': function (t) { var a = $('#p_amt'); if (a) a.value = Z.fmtNum(t.dataset.v); },
