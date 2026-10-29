@@ -76,3 +76,19 @@ html,body{overscroll-behavior-y:contain}.pc{touch-action:manipulation}
 .fc{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:22px;font-size:15px}.fc b{color:var(--tx);font-size:18px}
 .hero{padding-top:28px}
 .ssheet .gal{margin:-4px -4px 0}.ssheet .gal img{height:340px}
+
+/* five distinct looks (structure, not just colour) */
+.lk-obsidian-luxury .hero{text-align:center;padding:56px 0 36px}.lk-obsidian-luxury .hero h1{font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:clamp(26px,5vw,44px)}
+.lk-obsidian-luxury .pc{border:0;background:transparent;padding:0}.lk-obsidian-luxury .pc b{font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:13px}
+.lk-obsidian-luxury .grid{gap:28px 18px}.lk-obsidian-luxury .topb{justify-content:center}.lk-obsidian-luxury .tbr{position:absolute;right:22px}
+.lk-ivory-atelier .hero{padding:48px 0 30px}.lk-ivory-atelier .hero h1{font-weight:400;font-style:italic;font-size:clamp(30px,6vw,52px)}
+.lk-ivory-atelier .pc{background:transparent;border:0;box-shadow:none;padding:0}.lk-ivory-atelier .grid{gap:34px 22px}.lk-ivory-atelier .tag{font-style:italic;font-weight:400}
+.lk-street-culture .hero h1{text-transform:uppercase;font-size:clamp(36px,9vw,84px);line-height:.95;letter-spacing:-.03em}
+.lk-street-culture .pc{border:2px solid var(--tx);border-radius:0;padding:0;background:var(--surface)}.lk-street-culture .pc b{text-transform:uppercase;padding:0 10px;margin-top:8px}
+.lk-street-culture .grid{gap:10px}.lk-street-culture .tag{text-transform:uppercase;background:var(--acc);color:var(--onacc);display:inline-block;padding:4px 10px}
+.lk-street-culture .topb{border-bottom:2px solid var(--tx)}
+.lk-botanical .hero{text-align:center;padding:44px 12px 28px}.lk-botanical .pc{border-radius:28px;padding:12px;background:var(--surface);border-color:transparent}
+.lk-botanical .pc img,.lk-botanical .pc .noimg{border-radius:20px}.lk-botanical .grid{gap:22px 16px}
+.lk-modern-edge .topb{border-bottom:3px solid var(--acc)}.lk-modern-edge .hero h1{font-weight:800;letter-spacing:-.04em}
+.lk-modern-edge .pc{border-radius:var(--r);border:1px solid var(--line);box-shadow:0 1px 0 var(--line),0 12px 28px -18px rgba(0,0,0,.35)}
+@media (min-width:900px){.lk-street-culture .grid{grid-template-columns:repeat(4,1fr)}.lk-botanical .grid{grid-template-columns:repeat(3,1fr)}}

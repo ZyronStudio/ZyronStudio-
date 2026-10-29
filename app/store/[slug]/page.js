@@ -72,7 +72,7 @@ export default function Storefront({ params }) {
     finally { setBusy(false); }
   }
 
-  return (<div className={tk && tk.button === 'outline' ? 'outline' : ''} style={{ ...vars, '--ratio': P.ratio }}>
+  return (<div className={(tk && tk.button === 'outline' ? 'outline ' : '') + (tk && tk.look ? 'lk lk-' + tk.look : '')} style={{ ...vars, '--ratio': (tk && tk.look && window.ZTheme.LOOKS[tk.look].ratio) || P.ratio }}>
     {draft && <div className="pvbanner">Preview — only you can see this. Publish from your dashboard.</div>}
     <nav className="topb"><div className="tbl">{store.logo_path ? <img src={imgUrl(store.logo_path)} alt="" /> : <i>{store.name.charAt(0).toUpperCase()}</i>}<b>{store.name}</b></div>
       <div className="tbr">{store.whatsapp && <a className="ib" aria-label="Chat on WhatsApp" href={'https://wa.me/' + String(store.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Hello ' + store.name + ', I have a question.')} target="_blank" rel="noreferrer">Chat</a>}

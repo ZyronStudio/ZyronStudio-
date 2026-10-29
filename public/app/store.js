@@ -255,7 +255,7 @@ function photoBox() {
   var cell = 'width:76px;height:76px;border-radius:10px;object-fit:cover;background:var(--surface2);display:block';
   var x = 'position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:99px;border:0;background:#c33;color:#fff;font-size:14px;line-height:1';
   var cells = ex.map(function (i) { return '<span style="position:relative"><img alt="" style="' + cell + '" src="' + esc(img(i.path)) + '"><button type="button" aria-label="Remove photo" data-act="st-delimg" data-id="' + esc(i.id) + '" data-path="' + esc(i.path) + '" style="' + x + '">×</button></span>'; }).join('') +
-    PH.map(function (p, k) { return '<span style="position:relative"><img alt="" style="' + cell + '" src="' + esc(p.url) + '"><button type="button" aria-label="Remove photo" data-act="st-pend-rm" data-i="' + k + '" style="' + x + '">×</button></span>'; }).join('');
+    PH.map(function (p, k) { return '<span style="position:relative"><img alt="" style="' + cell + '" src="' + esc(p.url) + '"><button type="button" aria-label="Remove photo" data-act="st-pend-rm" data-i="' + k + '" style="' + x + '">×</button>' + (p.enh ? '<button type="button" data-act="st-enh" data-i="' + k + '" aria-pressed="' + (p.on ? 'true' : 'false') + '" style="position:absolute;left:3px;right:3px;bottom:3px;border:0;border-radius:99px;font-size:10px;font-weight:700;padding:3px 0;background:' + (p.on ? 'var(--gold)' : 'rgba(0,0,0,.65)') + ';color:' + (p.on ? '#111' : '#fff') + '">' + (p.on ? 'Enhanced ✓' : 'Enhance') + '</button>' : '') + '</span>'; }).join('');
   var add = n < 6 ? '<label for="p_files" style="width:76px;height:76px;border:1.5px dashed var(--line);border-radius:10px;display:grid;place-items:center;text-align:center;font-size:12px;line-height:1.3;color:var(--gold);cursor:pointer;font-weight:600">+<br>Add photos</label>' : '';
   return '<div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:6px">' + cells + add + '</div><span class="hint" style="margin:6px 0 0;display:block">' + n + ' of 6 photos. The first one is the cover.</span>';
 }
@@ -311,6 +311,40 @@ async function prepImage(file, max) {
   if (!b || b.size > 1000000) throw new Error('This photo is too large to process. Try a smaller one.');
   return { blob: b, type: b.type, ext: b.type === 'image/webp' ? 'webp' : 'jpg', url: URL.createObjectURL(b) };
 }
+
+/* Natural enhancement: levels, gentle white balance, brightness, light sharpen. Returns null when the photo needs nothing. Original is never touched. */
+async function enhancePrepared(p) {
+  try {
+    var im = await loadImg(p.url), w = im.naturalWidth, h = im.naturalHeight; if (!w || !h) return null;
+    var c = document.createElement('canvas'); c.width = w; c.height = h; var x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+    var d = x.getImageData(0, 0, w, h), a = d.data, n = w * h, hist = new Uint32Array(256), sr = 0, sg = 0, sb2 = 0, i;
+    for (i = 0; i < a.length; i += 4) { var l = (a[i] * 299 + a[i + 1] * 587 + a[i + 2] * 114) / 1000 | 0; hist[l]++; sr += a[i]; sg += a[i + 1]; sb2 += a[i + 2]; }
+    var acc = 0, lo = 0, hi = 255; for (i = 0; i < 256; i++) { acc += hist[i]; if (acc >= n * .01) { lo = i; break; } } acc = 0; for (i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= n * .01) { hi = i; break; } }
+    /* white balance only from the photo's edge, and only if the edge looks like a neutral backdrop: never from the product's own colours */
+    var er = 0, eg = 0, eb = 0, en = 0, ex2, ey; for (ey = 0; ey < h; ey += 3) for (ex2 = 0; ex2 < w; ex2 += 3) { if (ey > 6 && ey < h - 7 && ex2 > 6 && ex2 < w - 7) { ex2 = Math.max(ex2, w - 8); continue; } var q = ey * w * 4 + ex2 * 4; er += a[q]; eg += a[q + 1]; eb += a[q + 2]; en++; }
+    var gr = 1, gg = 1, gb = 1, cl = function (v) { return Math.max(.94, Math.min(1.06, v)); };
+    if (en) { er /= en; eg /= en; eb /= en; var em = (er + eg + eb) / 3; if (em > 110 && Math.max(er, eg, eb) - Math.min(er, eg, eb) < 28) { gr = cl(em / er); gg = cl(em / eg); gb = cl(em / eb); } }
+    var mr = sr / n, mg = sg / n, mb = sb2 / n;
+    var lo2 = Math.min(lo, 40), hi2 = Math.max(hi, 215), span = hi2 - lo2, gamma = 1;
+    var lm = (mr * .299 + mg * .587 + mb * .114); if (lm < 95) gamma = Math.max(.72, Math.log(110 / 255) / Math.log(Math.max(lm, 30) / 255));
+    var wbOff = Math.abs(gr - 1) + Math.abs(gb - 1) < .03;
+    if (lo2 < 6 && hi2 > 249 && gamma === 1 && wbOff) return null;
+    var lut = new Uint8ClampedArray(256); for (i = 0; i < 256; i++) lut[i] = 255 * Math.pow(Math.max(0, Math.min(1, (i - lo2) / span)), gamma);
+    for (i = 0; i < a.length; i += 4) { a[i] = lut[Math.min(255, a[i] * gr | 0)]; a[i + 1] = lut[Math.min(255, a[i + 1] * gg | 0)]; a[i + 2] = lut[Math.min(255, a[i + 2] * gb | 0)]; }
+    /* light unsharp mask (3x3), amount .35 */
+    var src = new Uint8ClampedArray(a), W4 = w * 4, y, k, am = .35;
+    for (y = 1; y < h - 1; y++) for (var xx = 1; xx < w - 1; xx++) { var o = y * W4 + xx * 4; for (k = 0; k < 3; k++) { var b = (src[o - W4 + k] + src[o + W4 + k] + src[o - 4 + k] + src[o + 4 + k]) / 4; a[o + k] = Math.max(0, Math.min(255, src[o + k] + am * (src[o + k] - b))); } }
+    x.putImageData(d, 0, 0);
+    var b2 = await toBlob(c, p.type, .82); if (!b2 || !b2.size || b2.size > 1000000) return null;
+    return { blob: b2, type: b2.type, ext: p.ext, url: URL.createObjectURL(b2) };
+  } catch (e) { return null; }
+}
+ACT['st-enh'] = function (t) {
+  var p = PH[parseInt(t.dataset.i, 10)]; if (!p || !p.enh) return;
+  var orig = p.orig || { blob: p.blob, type: p.type, ext: p.ext, url: p.url };
+  if (p.on) { p.blob = orig.blob; p.type = orig.type; p.ext = orig.ext; p.url = orig.url; p.on = false; } else { p.orig = orig; p.blob = p.enh.blob; p.type = p.enh.type; p.ext = p.enh.ext; p.url = p.enh.url; p.on = true; }
+  photoRefresh();
+};
 async function putLogoPrepared(p, storeId, old) {
   var path = storeId + '/logo-' + Date.now() + '.' + p.ext, c = sb();
   var up = await c.storage.from('store-media').upload(path, p.blob, { contentType: p.type }); if (up.error) throw up.error;
@@ -326,7 +360,7 @@ document.addEventListener('change', async function (e) {
   if (files.length > room) { errs.push(room ? 'Only ' + room + ' more photo' + (room > 1 ? 's' : '') + ' fit, so the rest were skipped.' : 'A product can have up to 6 photos.'); files = files.slice(0, room); }
   perr('p_err', ''); var sv = document.querySelector('[data-act="st-save"]'); if (sv) sv.disabled = true;
   for (var i = 0; i < files.length; i++) {
-    try { var p = await prepImage(files[i], 1280); p.name = files[i].name; PH.push(p); } catch (er) { errs.push((files[i].name ? files[i].name + ': ' : '') + er.message); }
+    try { var p = await prepImage(files[i], 1280); p.name = files[i].name; p.enh = await enhancePrepared(p); PH.push(p); } catch (er) { errs.push((files[i].name ? files[i].name + ': ' : '') + er.message); }
     photoRefresh();
   }
   sv = document.querySelector('[data-act="st-save"]'); if (sv) sv.disabled = false;
@@ -360,7 +394,7 @@ ACT['st-copy'] = function () { var u = link(ST.store); function ok() { toast('Li
 ACT['st-share'] = function () { window.open('https://wa.me/?text=' + encodeURIComponent('Shop ' + ST.store.name + ' here: ' + link(ST.store)), '_blank'); };
 ACT['st-new'] = function () { photosReset(); EDIT = { store_product_images: [] }; Z.openSheet('New product', prodForm()); };
 ACT['st-edit'] = function (t) { var p = byId(t.dataset.id); if (!p) return; photosReset(); EDIT = Object.assign({}, p, { store_product_images: (p.store_product_images || []).slice() }); Z.openSheet('Edit product', prodForm(EDIT)); };
-ACT['st-pend-rm'] = function (t) { var p = PH.splice(parseInt(t.dataset.i, 10), 1)[0]; if (p) { try { URL.revokeObjectURL(p.url); } catch (e) { } } photoRefresh(); };
+ACT['st-pend-rm'] = function (t) { var p = PH.splice(parseInt(t.dataset.i, 10), 1)[0]; if (p) { [p.url, p.orig && p.orig.url, p.enh && p.enh.url].forEach(function (u) { if (u) try { URL.revokeObjectURL(u); } catch (e) { } }); } photoRefresh(); };
 ACT['st-suggest'] = function () { var n = val('p_name'); if (!n) return perr('p_err', 'Type the product name first'); perr('p_err', ''); var d = document.getElementById('p_desc'); d.value = guessDesc(n, val('p_cat'), 0); d.dataset.auto = '1'; };
 document.addEventListener('input', function (e) {
   var t = e.target; if (!t) return;

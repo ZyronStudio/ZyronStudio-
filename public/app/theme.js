@@ -9,6 +9,11 @@ function lum(hex) { var a = hex2rgb(hex).map(function (v) { v /= 255; return v <
 function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
 
 var PRESETS = [
+  { id: 'obsidian-luxury', name: 'Obsidian Luxury', primary: '#cdb27a', mode: 'dark', font: 'g:Cormorant Garamond', radius: 'sharp', button: 'outline' },
+  { id: 'ivory-atelier', name: 'Ivory Atelier', primary: '#8a6f4d', mode: 'light', font: 'g:Playfair Display', radius: 'sharp', button: 'solid' },
+  { id: 'street-culture', name: 'Street Culture', primary: '#ff4d2e', mode: 'dark', font: 'g:Archivo Black', radius: 'sharp', button: 'solid' },
+  { id: 'botanical', name: 'Botanical', primary: '#6b8f71', mode: 'light', font: 'g:Lora', radius: 'round', button: 'solid' },
+  { id: 'modern-edge', name: 'Modern Edge', primary: '#4f46e5', mode: 'light', font: 'g:Sora', radius: 'soft', button: 'solid' },
   { id: 'obsidian-gold', name: 'Obsidian Gold', primary: '#d6b875', mode: 'dark', font: 'modern', radius: 'soft', button: 'solid' },
   { id: 'emerald-luxe', name: 'Emerald Luxe', primary: '#10b981', mode: 'dark', font: 'modern', radius: 'soft', button: 'solid' },
   { id: 'electric-blue', name: 'Electric Blue', primary: '#3b82f6', mode: 'dark', font: 'modern', radius: 'soft', button: 'solid' },
@@ -18,6 +23,7 @@ var PRESETS = [
 ];
 var CATEGORY_DEFAULT = { fashion: '#e7c4b0', shoes_accessories: '#7fb2ff', beauty_wigs: '#f0a6ca', perfume_cosmetics: '#c7a8ff', electronics: '#4fe0cf', restaurant: '#ff9f43', rental: '#4fa3ff', services: '#b794f6', general: '#d6b875' };
 var FONTS = { modern: "Geist, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", classic: "Georgia, 'Times New Roman', serif", friendly: "'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" };
+var LOOKS = { 'obsidian-luxury': { ratio: '3/4', cols: 2 }, 'ivory-atelier': { ratio: '4/5', cols: 2 }, 'street-culture': { ratio: '1/1', cols: 2 }, 'botanical': { ratio: '1/1', cols: 2 }, 'modern-edge': { ratio: '4/5', cols: 2 } };
 var RADII = { sharp: [4, 4], soft: [14, 12], round: [22, 999] };
 
 function defaults(category) { return { preset: '', primary: CATEGORY_DEFAULT[category] || CATEGORY_DEFAULT.general, mode: 'dark', font: 'modern', radius: 'soft', button: 'solid' }; }
@@ -46,9 +52,9 @@ function build(theme, category) {
   if (ratio(tk.text, tk.bg) < 4.5) { tk.text = dark ? '#ffffff' : '#000000'; notes.push('Text colour was corrected for readability.'); }
   if (ratio(tk.muted, tk.bg) < 4.5) { tk.muted = dark ? hsl2hex(h, 10, 78) : hsl2hex(h, 10, 28); notes.push('Supporting text was lightened for readability.'); }
   tk.radius = RADII[t.radius][0]; tk.btnRadius = RADII[t.radius][1]; tk.fontId = t.font; tk.font = fontCss(t.font); tk.button = t.button; tk.mode = t.mode;
-  tk.notes = notes; tk.contrast = { text: Math.round(ratio(tk.text, tk.bg) * 10) / 10, button: Math.round(ratio(tk.onPrimary, tk.primary) * 10) / 10 };
+  tk.look = (theme && theme.preset && LOOKS[theme.preset]) ? theme.preset : ''; tk.notes = notes; tk.contrast = { text: Math.round(ratio(tk.text, tk.bg) * 10) / 10, button: Math.round(ratio(tk.onPrimary, tk.primary) * 10) / 10 };
   return tk;
 }
 function cssVars(tk) { loadFont(tk.fontId); return { '--bg': tk.bg, '--surface': tk.surface, '--inset': tk.inset, '--line': tk.border, '--tx': tk.text, '--mut': tk.muted, '--acc': tk.primary, '--onacc': tk.onPrimary, '--acc2': tk.accent, '--r': tk.radius + 'px', '--rb': tk.btnRadius + 'px', '--font': tk.font }; }
-root.ZTheme = { GF: GF, validFont: validFont, loadFont: loadFont, PRESETS: PRESETS, FONTS: FONTS, defaults: defaults, normalize: normalize, build: build, cssVars: cssVars, ratio: ratio };
+root.ZTheme = { GF: GF, validFont: validFont, loadFont: loadFont, PRESETS: PRESETS, LOOKS: LOOKS, FONTS: FONTS, defaults: defaults, normalize: normalize, build: build, cssVars: cssVars, ratio: ratio };
 })(typeof window !== 'undefined' ? window : this);
