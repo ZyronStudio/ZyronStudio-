@@ -482,9 +482,11 @@ if (S.user && S.loaded) rerender();
 /*TS*/
 /* ---------------- Theme Studio ---------------- */
 var TS = null, TSV = 'mobile';
-function tsDirty() { if (!TS || !ST.store) return false; var b = ZTheme.normalize(ST.store.theme, ST.store.category), k = ['primary', 'mode', 'font', 'radius', 'button']; return k.some(function (x) { return String(TS[x]) !== String(b[x]); }); }
-function tsState() { var d = tsDirty(); return '<span class="pill ' + (d ? '' : 'paid') + '">' + (d ? 'Unsaved changes' : 'Saved') + '</span>'; }
-function tsInit() { var st = ST.store; TS = ZTheme.normalize(st.theme, st.category); TS.preset = (st.theme && st.theme.preset) || ''; }
+function tsBase() { var st = ST.store; return st.theme_draft || st.theme; }
+function tsPending() { var st = ST.store; if (!st || !st.theme_draft) return false; var a = ZTheme.normalize(st.theme_draft, st.category), b = ZTheme.normalize(st.theme, st.category); return ['primary', 'mode', 'font', 'radius', 'button'].some(function (x) { return String(a[x]) !== String(b[x]); }); }
+function tsDirty() { if (!TS || !ST.store) return false; var b = ZTheme.normalize(tsBase(), ST.store.category), k = ['primary', 'mode', 'font', 'radius', 'button']; return k.some(function (x) { return String(TS[x]) !== String(b[x]); }); }
+function tsState() { var d = tsDirty(), pe = !d && tsPending() && ST.store.status === 'published'; return '<span class="pill ' + (d || pe ? '' : 'paid') + '">' + (d ? 'Unsaved changes' : pe ? 'Draft saved · not live yet' : ST.store.status === 'published' ? 'Live' : 'Saved') + '</span>'; }
+function tsInit() { var st = ST.store, b = tsBase(); TS = ZTheme.normalize(b, st.category); TS.preset = (b && b.preset) || ''; }
 function styleStr(tk) { var v = ZTheme.cssVars(tk); return Object.keys(v).map(function (k) { return k + ':' + v[k]; }).join(';'); }
 function tsPreviewHTML(tk) {
   var st = ST.store, ps = ST.prods.filter(function (p) { return p.status === 'published'; }).slice(0, 2), btn = tk.button === 'outline' ? 'background:transparent;color:var(--acc);border:2px solid var(--acc)' : 'background:var(--acc);color:var(--onacc);border:2px solid var(--acc)';
@@ -520,7 +522,7 @@ SCR.theme = function () {
       '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:8px"><input class="in" id="ts_fontin" maxlength="40" placeholder="Or type any Google Font name" value="' + esc(/^g:/.test(TS.font) && !fontInList(TS.font) ? TS.font.slice(2) : '') + '" autocapitalize="words" spellcheck="false"><button type="button" class="btn" data-act="ts-fontgo">Use</button></div><span class="hint" style="margin:0">Pick one that matches your logo. Any name from fonts.google.com works, about 1,500 fonts.</span></div>' +
     '<div class="field"><label>Corners</label>' + seg('radius', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]) + '</div>' +
     '<div class="field"><label>Buttons</label>' + seg('button', [['solid', 'Solid'], ['outline', 'Outline']]) + '</div></div></details>' +
-    '<div class="err" id="ts_err" role="alert"></div><div class="btn-row" style="margin-top:6px"><button class="btn btn-grow" data-act="ts-reset">Reset</button><button class="btn btn-gold btn-grow" data-act="ts-save">Save theme</button></div>' +
+    '<div class="err" id="ts_err" role="alert"></div><div class="btn-row" style="margin-top:6px"><button class="btn btn-grow" data-act="ts-reset">Reset</button><button class="btn btn-gold btn-grow" data-act="ts-save">' + (ST.store.status === 'published' ? 'Save draft' : 'Save theme') + '</button></div>' + (ST.store.status === 'published' && tsPending() ? '<button class="btn btn-block" data-act="ts-publish" style="margin-top:8px">Make this look live</button><p class="hint" style="text-align:center;margin:6px 0 0">Customers still see your current look until you do.</p>' : '') +
     '<p class="hint" style="text-align:center;margin-top:10px">Saved themes apply to your public store ' + (st.status === 'published' ? 'straight away.' : 'once you publish.') + '</p></div>' + H.navHTML('home');
 };
 function fontCount() { return Object.keys(ZTheme.GF).reduce(function (a, g) { return a + ZTheme.GF[g].length; }, 3); }
@@ -532,13 +534,18 @@ ACT['ts-set'] = function (t) { TS[t.dataset.ts] = t.dataset.v; if (t.dataset.ts 
 ACT['ts-preset'] = function (t) { var p = ZTheme.PRESETS.filter(function (x) { return x.id === t.dataset.v; })[0]; if (!p) return; TS = { preset: p.id, primary: p.primary, mode: p.mode, font: p.font, radius: p.radius, button: p.button }; rerender(); };
 ACT['ts-reset'] = function () { TS = null; tsInit(); TS = Object.assign(ZTheme.defaults(ST.store.category), { preset: '' }); rerender(); toast('Back to your category look. Tap Save to apply.'); };
 ACT['ts-view'] = function (t) { TSV = t.dataset.v; rerender(); };
+ACT['ts-publish'] = async function (t) {
+  if (t.disabled) return; t.disabled = true;
+  try { var r = await sb().from('stores').update({ theme: ST.store.theme_draft, theme_draft: null }).eq('id', ST.store.id); if (r.error) throw r.error; TS = null; await load(true); toast('Your new look is live'); }
+  catch (e) { t.disabled = false; perr('ts_err', Z.errMsg(e)); }
+};
 ACT['ts-save'] = async function (t) {
   t.disabled = true; perr('ts_err', '');
   try {
     var c = sb(), lf = document.getElementById('ts_logo').files[0]; if (lf) await putLogo(lf, ST.store.id, ST.store.logo_path);
     var th = { primary: TS.primary, mode: TS.mode, font: TS.font, radius: TS.radius, button: TS.button }; if (TS.preset) th.preset = TS.preset;
-    var r = await c.from('stores').update({ theme: th }).eq('id', ST.store.id); if (r.error) throw r.error;
-    TS = null; await load(true); toast('Theme saved');
+    var live = ST.store.status === 'published', r = await c.from('stores').update(live ? { theme_draft: th } : { theme: th, theme_draft: null }).eq('id', ST.store.id); if (r.error) throw r.error;
+    TS = null; await load(true); toast(live ? 'Draft saved. Customers do not see it yet' : 'Theme saved');
   } catch (e) { t.disabled = false; perr('ts_err', Z.errMsg(e)); }
 };
 ACT['ts-logo-rm'] = async function () { try { var old = ST.store.logo_path; var r = await sb().from('stores').update({ logo_path: null }).eq('id', ST.store.id); if (r.error) throw r.error; if (old) await sb().storage.from('store-media').remove([old]); await load(true); toast('Logo removed'); } catch (e) { toast(Z.errMsg(e), true); } };
